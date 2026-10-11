@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulsar Mouse Manager</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #181b26;
+      --card-hover: #1f2333;
+      --border: #282d3f;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #10b981;
+      --danger: #ef4444;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    input[type="range"] {
+      accent-color: #3b82f6;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 antialiased">
+  <div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Top Connection Warning (Shown if Disconnected) -->
+    <div id="unconnected-banner" class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-blue-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-400">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <div class="font-bold text-sm text-white">Direct Browser Control Available</div>
+          <div class="text-xs text-gray-300">Click <strong class="text-white">"Connect WebHID"</strong> to connect directly to your mouse via USB/wireless in Chrome/Edge, or use the local service.</div>
+        </div>
+      </div>
+      <button onclick="connectWebHID()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-500/25 transition whitespace-nowrap flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Connect WebHID Now
+      </button>
+    </div>
+
+    <!-- Top Header -->
+    <header class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 id="device-name" class="text-2xl font-bold tracking-tight">Pulsar Xlite v4 Wireless</h1>
+            <span id="conn-pill" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ready</span>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-gray-400 mt-1">
+            <span>Firmware: <strong id="fw-version" class="text-gray-300">V4.0.16</strong></span>
+            <span>•</span>
+            <span id="backend-label">Mode: Standalone / Local</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics & Actions -->
+      <div class="flex items-center gap-3 self-end md:self-auto">
+        <div id="battery-card" class="bg-[#202534] border border-[#2d3449] rounded-xl px-4 py-2 flex items-center gap-3">
+          <div class="relative w-8 h-5 border-2 border-gray-400 rounded-sm p-0.5 flex items-center">
+            <div id="battery-bar" class="h-full bg-emerald-500 rounded-2xs" style="width: 80%;"></div>
+            <div class="absolute -right-1.5 top-1 w-1 h-2 bg-gray-400 rounded-r-sm"></div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400 font-medium">Battery</div>
+            <div id="battery-pct" class="text-sm font-bold text-white">80%</div>
+          </div>
+        </div>
+
+        <button id="webhid-btn" onclick="connectWebHID()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition shadow-lg shadow-purple-600/20 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Connect WebHID
+        </button>
+
+        <button onclick="refreshData()" class="p-2.5 rounded-xl bg-[#202534] hover:bg-[#282f42] border border-[#2d3449] text-gray-300 hover:text-white transition" title="Refresh from device">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+
+        <button onclick="saveAllChanges()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Apply to Mouse
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Performance Row -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Polling Rate -->
+      <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Polling Rate</h3>
+          <span id="poll-display" class="text-sm font-bold text-blue-400">1000 Hz</span>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+          <button type="button" onclick="setPolling(125)" class="poll-btn py-2 text-xs font-semibold rounded-lg bg-[#202534] border border-[#2d3449] hover:border-blue-500 transition" data-rate="125">125 Hz</button>
+          <button type="button" onclick="setPolling(250)" class="poll-btn py-2 text-xs font-semibold rounded-lg bg-[#202534] border border-[#2d3449] hover:border-blue-500 transition" data-rate="250">250 Hz</button>
+          <button type="button" onclick="setPolling(500)" class="poll-btn py-2 text-xs font-semibold rounded-lg bg-[#202534] border border-[#2d3449] hover:border-blue-500 transition" data-rate="500">500 Hz</button>
+          <button type="button" onclick="setPolling(1000)" class="poll-btn py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white border border-blue-500 shadow-md shadow-blue-500/20 transition" data-rate="1000">1000 Hz</button>
+        </div>
+      </div>
+
+      <!-- Debounce Time -->
+      <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Debounce Time</h3>
+          <span id="debounce-val" class="text-sm font-bold text-blue-400">2 ms</span>
+        </div>
+        <input type="range" id="debounce-slider" min="0" max="20" step="1" value="2" oninput="updateDebounce(this.value)" onchange="applyDebounceInstant(this.value)" class="w-full h-2 bg-[#202534] rounded-lg appearance-none cursor-pointer">
+        <div class="flex justify-between text-2xs text-gray-500 font-mono">
+          <span>0 ms (Instant)</span>
+          <span>10 ms</span>
+          <span>20 ms</span>
+        </div>
+      </div>
+
+      <!-- Auto Sleep / Power Saving -->
+      <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Power Saving Sleep</h3>
+          <span id="sleep-val" class="text-sm font-bold text-blue-400">30 s</span>
+        </div>
+        <input type="range" id="sleep-slider" min="30" max="900" step="30" value="30" oninput="updateSleep(this.value)" onchange="applySleepInstant(this.value)" class="w-full h-2 bg-[#202534] rounded-lg appearance-none cursor-pointer">
+        <div class="flex justify-between text-2xs text-gray-500 font-mono">
+          <span>30s</span>
+          <span>5m</span>
+          <span>15m</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Management Bar -->
+    <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-2">Profiles:</span>
+        <div id="profile-tabs" class="flex gap-1.5">
+          <button onclick="switchProfileTab(1)" class="prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white" data-prof="1">Profile 1</button>
+          <button onclick="switchProfileTab(2)" class="prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#202534] text-gray-300 hover:text-white" data-prof="2">Profile 2</button>
+          <button onclick="switchProfileTab(3)" class="prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#202534] text-gray-300 hover:text-white" data-prof="3">Profile 3</button>
+          <button onclick="switchProfileTab(4)" class="prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#202534] text-gray-300 hover:text-white" data-prof="4">Profile 4</button>
+          <button onclick="switchProfileTab(5)" class="prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#202534] text-gray-300 hover:text-white" data-prof="5">Profile 5</button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="set-active-profile-btn" onclick="setActiveProfile()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition">
+          Set as Active Profile
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Profile Settings -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left Column: DPI Stages (2 cols wide on large) -->
+      <div class="lg:col-span-2 bg-[#181b26] border border-[#282d3f] rounded-2xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold">DPI Stages</h2>
+            <p class="text-xs text-gray-400">Configure sensitivity levels and LED indicator colors.</p>
+          </div>
+          <button onclick="addDpiStage()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#202534] hover:bg-[#282f42] border border-[#2d3449] transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Stage
+          </button>
+        </div>
+
+        <div id="dpi-stages-container" class="space-y-3">
+          <!-- DPI Stages injected via JS -->
+        </div>
+      </div>
+
+      <!-- Right Column: Tunables, LOD, LED & Buttons -->
+      <div class="space-y-6">
+
+        <!-- Sensor Tunables Card -->
+        <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-4">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Sensor Features</h3>
+
+          <!-- Motion Sync -->
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium">Motion Sync</div>
+              <div class="text-2xs text-gray-500">Syncs sensor readings with USB polls</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="motion-sync-check" class="sr-only peer" checked onchange="toggleMotionSync(this.checked)">
+              <div class="w-11 h-6 bg-[#202534] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <!-- Angle Snap -->
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium">Angle Snapping</div>
+              <div class="text-2xs text-gray-500">Linear path prediction assistance</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="angle-snap-check" class="sr-only peer" onchange="toggleAngleSnap(this.checked)">
+              <div class="w-11 h-6 bg-[#202534] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <!-- Ripple Control -->
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium">Ripple Control</div>
+              <div class="text-2xs text-gray-500">Smoothing at extreme high DPI</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="ripple-check" class="sr-only peer" onchange="toggleRipple(this.checked)">
+              <div class="w-11 h-6 bg-[#202534] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <!-- LOD -->
+          <div class="pt-2 border-t border-[#282d3f] flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium">Lift-Off Distance (LOD)</div>
+              <div class="text-2xs text-gray-500">Sensor cut-off height</div>
+            </div>
+            <div class="flex bg-[#202534] p-1 rounded-xl border border-[#2d3449]">
+              <button type="button" onclick="setLod(1)" id="lod-1-btn" class="px-3 py-1 rounded-lg text-xs font-semibold">1 mm</button>
+              <button type="button" onclick="setLod(2)" id="lod-2-btn" class="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">2 mm</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LED Settings Card -->
+        <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-4">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">LED Lighting</h3>
+
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-medium">Lighting Effect</label>
+            <select id="led-effect-select" onchange="updateLedEffect(this.value)" class="bg-[#202534] border border-[#2d3449] rounded-xl px-3 py-1.5 text-xs font-medium text-white focus:outline-none focus:border-blue-500">
+              <option value="off">Off</option>
+              <option value="steady" selected>Steady</option>
+              <option value="breathe">Breathe</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-400">Brightness</span>
+              <span id="led-bright-display" class="font-bold">15 / 255</span>
+            </div>
+            <input type="range" id="led-bright-slider" min="0" max="255" value="15" oninput="updateBrightness(this.value)" onchange="applyBrightnessInstant(this.value)" class="w-full h-2 bg-[#202534] rounded-lg appearance-none cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Buttons Overview Card -->
+        <div class="bg-[#181b26] border border-[#282d3f] rounded-2xl p-5 shadow-sm space-y-3">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Button Assignments</h3>
+          <div id="buttons-list" class="space-y-1.5 text-xs">
+            <!-- Buttons list injected via JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white text-sm shadow-2xl flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-2 z-50">
+      <svg id="toast-icon" class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span id="toast-msg">Settings applied successfully!</span>
+    </div>
+
+    <!-- Help / Guidance Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+      <div class="bg-[#181b26] border border-[#2d3449] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-3 text-amber-400">
+          <div class="p-2.5 rounded-xl bg-amber-500/20">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 id="modal-title" class="text-base font-bold text-white">Connection Note</h3>
+        </div>
+        <p id="modal-desc" class="text-xs text-gray-300 leading-relaxed whitespace-pre-line"></p>
+        <div class="flex justify-end gap-3 pt-2">
+          <button onclick="closeModal()" class="px-4 py-2 rounded-xl bg-[#202534] hover:bg-[#282f42] text-white text-xs font-semibold transition">Close</button>
+          <button onclick="closeModal(); connectWebHID();" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-2">
+            Try Other Entry
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Pure JavaScript WebHID Protocol Engine for Pulsar Gaming Mice
+    class PulsarHIDEngine {
+      constructor(device) {
+        this.device = device;
+        this._queue = Promise.resolve();
+      }
+
+      enqueue(fn) {
+        const next = this._queue.then(() => fn()).catch(err => {
+          throw err;
+        });
+        this._queue = next.catch(() => {});
+        return next;
+      }
+
+      calcChecksum(buf) {
+        let sum = 0;
+        for (let i = 0; i < 62; i++) {
+          sum += buf[i];
+        }
+        return sum & 0xFFFF;
+      }
+
+      buildPacket(cat, reg, sub, profile = 0, payload = []) {
+        const buf = new Uint8Array(64);
+        buf[0] = 0x00; // CMD direction
+        buf[1] = cat;
+        buf[2] = reg;
+        buf[3] = sub;
+        buf[6] = profile;
+        for (let i = 0; i < payload.length; i++) {
+          buf[7 + i] = payload[i];
+        }
+        const cs = this.calcChecksum(buf);
+        buf[62] = cs & 0xFF;
+        buf[63] = (cs >> 8) & 0xFF;
+        return buf;
+      }
+
+      buildReadPacket(cat, reg, sub, profile = 0, payload = []) {
+        return this.buildPacket(cat, reg | 0x80, sub, profile, payload);
+      }
+
+      async sendCmd(cat, reg, sub, profile = 0, payload = []) {
+        return this.enqueue(async () => {
+          if (!this.device || !this.device.opened) throw new Error("Mouse not connected");
+          const pkt = this.buildPacket(cat, reg, sub, profile, payload);
+          await this.device.sendFeatureReport(0, pkt);
+          for (let i = 0; i < 20; i++) {
+            await new Promise(r => setTimeout(r, 20));
+            try {
+              const dv = await this.device.receiveFeatureReport(0);
+              const rsp = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+              if (rsp[0] === 0x01 || rsp[0] === 0x02) {
+                return rsp;
+              }
+            } catch (_) {}
+          }
+          return new Uint8Array(64);
+        });
+      }
+
+      async read(cat, reg, sub, profile = 0, payload = []) {
+        return this.enqueue(async () => {
+          if (!this.device || !this.device.opened) throw new Error("Mouse not connected");
+          const pkt = this.buildReadPacket(cat, reg, sub, profile, payload);
+          await this.device.sendFeatureReport(0, pkt);
+          for (let i = 0; i < 25; i++) {
+            await new Promise(r => setTimeout(r, 20));
+            try {
+              const dv = await this.device.receiveFeatureReport(0);
+              const rsp = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+              if (rsp[0] === 0x01 && rsp[1] === cat && (rsp[2] & 0x7F) === (reg & 0x7F)) {
+                return rsp;
+              }
+            } catch (_) {}
+          }
+          throw new Error(`Device read query timed out (cat: 0x${cat.toString(16)}, reg: 0x${reg.toString(16)})`);
+        });
+      }
+    }
+
+    // Application State
+    const appState = {
+      device: "Pulsar Xlite v4 Wireless",
+      firmware: "V4.0.16",
+      battery: { battery_percent: 80, power_connected: false },
+      active_profile: 1,
+      current_tab_profile: 1,
+      connectionMode: "none", // "webhid", "api", "none"
+      hidEngine: null,
+      globals: {
+        polling_rate: 1000,
+        debounce: 2,
+        motion_sync: true,
+        angle_snap: false,
+        ripple_control: false,
+        power_saving: 30
+      },
+      profiles: [
+        {
+          profile: 1,
+          dpi: { active: 3, count: 3, stages: [[400, 400], [800, 800], [1600, 1600]] },
+          stage_colors: [[10, 10, 220], [0, 0, 220], [10, 200, 10]],
+          lod: 2,
+          led_effect: "steady",
+          brightness: 15,
+          buttons: { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" }
+        },
+        {
+          profile: 2,
+          dpi: { active: 2, count: 6, stages: [[400, 400], [800, 800], [1600, 1600], [3200, 3200], [6400, 6400], [12800, 12800]] },
+          stage_colors: [[10, 10, 220], [0, 0, 220], [10, 200, 10], [200, 200, 0], [200, 96, 0], [200, 80, 128]],
+          lod: 2,
+          led_effect: "off",
+          brightness: 255,
+          buttons: { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" }
+        },
+        {
+          profile: 3,
+          dpi: { active: 2, count: 6, stages: [[400, 400], [800, 800], [1600, 1600], [3200, 3200], [6400, 6400], [12800, 12800]] },
+          stage_colors: [[10, 10, 220], [0, 0, 220], [10, 200, 10], [200, 200, 0], [200, 96, 0], [200, 80, 128]],
+          lod: 2,
+          led_effect: "off",
+          brightness: 255,
+          buttons: { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" }
+        },
+        {
+          profile: 4,
+          dpi: { active: 2, count: 6, stages: [[400, 400], [800, 800], [1600, 1600], [3200, 3200], [6400, 6400], [12800, 12800]] },
+          stage_colors: [[10, 10, 220], [0, 0, 220], [10, 200, 10], [200, 200, 0], [200, 96, 0], [200, 80, 128]],
+          lod: 2,
+          led_effect: "off",
+          brightness: 255,
+          buttons: { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" }
+        },
+        {
+          profile: 5,
+          dpi: { active: 2, count: 6, stages: [[400, 400], [800, 800], [1600, 1600], [3200, 3200], [6400, 6400], [12800, 12800]] },
+          stage_colors: [[10, 10, 220], [0, 0, 220], [10, 200, 10], [200, 200, 0], [200, 96, 0], [200, 80, 128]],
+          lod: 2,
+          led_effect: "off",
+          brightness: 255,
+          buttons: { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" }
+        }
+      ]
+    };
+
+    const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:8080';
+
+    // UI Renderers
+    function renderHeader() {
+      document.getElementById('device-name').textContent = appState.device;
+      document.getElementById('fw-version').textContent = appState.firmware || 'V4.0.16';
+      
+      const batPct = appState.battery ? appState.battery.battery_percent : 80;
+      document.getElementById('battery-pct').textContent = batPct + '%';
+      document.getElementById('battery-bar').style.width = batPct + '%';
+      if (batPct < 20) {
+        document.getElementById('battery-bar').className = 'h-full bg-red-500 rounded-2xs';
+      } else if (batPct < 50) {
+        document.getElementById('battery-bar').className = 'h-full bg-yellow-500 rounded-2xs';
+      } else {
+        document.getElementById('battery-bar').className = 'h-full bg-emerald-500 rounded-2xs';
+      }
+
+      const pill = document.getElementById('conn-pill');
+      const banner = document.getElementById('unconnected-banner');
+      if (appState.connectionMode === 'webhid') {
+        pill.textContent = 'WebHID Connected ✓';
+        pill.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        banner.classList.add('hidden');
+      } else if (appState.connectionMode === 'api') {
+        pill.textContent = 'Local Service Active ✓';
+        pill.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        banner.classList.add('hidden');
+      } else {
+        pill.textContent = 'Not Connected';
+        pill.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function renderGlobals() {
+      document.getElementById('poll-display').textContent = appState.globals.polling_rate + ' Hz';
+      document.querySelectorAll('.poll-btn').forEach(btn => {
+        const rate = parseInt(btn.dataset.rate);
+        if (rate === appState.globals.polling_rate) {
+          btn.className = 'poll-btn py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white border border-blue-500 shadow-md shadow-blue-500/20 transition';
+        } else {
+          btn.className = 'poll-btn py-2 text-xs font-semibold rounded-lg bg-[#202534] text-gray-300 border border-[#2d3449] hover:border-blue-500 transition';
+        }
+      });
+
+      document.getElementById('debounce-val').textContent = appState.globals.debounce + ' ms';
+      document.getElementById('debounce-slider').value = appState.globals.debounce;
+
+      document.getElementById('sleep-val').textContent = appState.globals.power_saving + ' s';
+      document.getElementById('sleep-slider').value = appState.globals.power_saving;
+
+      document.getElementById('motion-sync-check').checked = !!appState.globals.motion_sync;
+      document.getElementById('angle-snap-check').checked = !!appState.globals.angle_snap;
+      document.getElementById('ripple-check').checked = !!appState.globals.ripple_control;
+    }
+
+    function renderProfileTab() {
+      const pIdx = appState.current_tab_profile - 1;
+      const prof = appState.profiles[pIdx] || appState.profiles[0];
+
+      document.querySelectorAll('.prof-tab').forEach(b => {
+        const pNum = parseInt(b.dataset.prof);
+        if (pNum === appState.current_tab_profile) {
+          b.className = 'prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white shadow-md shadow-blue-500/20';
+        } else {
+          b.className = 'prof-tab px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#202534] text-gray-400 hover:text-white transition';
+        }
+      });
+
+      const actBtn = document.getElementById('set-active-profile-btn');
+      if (appState.active_profile === appState.current_tab_profile) {
+        actBtn.textContent = 'Active Operating Profile ✓';
+        actBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 cursor-default';
+      } else {
+        actBtn.textContent = 'Set as Active Profile';
+        actBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition cursor-pointer';
+      }
+
+      const container = document.getElementById('dpi-stages-container');
+      container.innerHTML = '';
+      const stages = (prof.dpi && prof.dpi.stages) ? prof.dpi.stages : [[400, 400], [800, 800], [1600, 1600]];
+      const activeStage = (prof.dpi && prof.dpi.active) ? prof.dpi.active : 1;
+      const colors = prof.stage_colors || [];
+
+      stages.forEach((stg, idx) => {
+        const stageNum = idx + 1;
+        const dpiVal = Array.isArray(stg) ? stg[0] : stg;
+        const isCurrent = stageNum === activeStage;
+        const color = colors[idx] || [10, 10, 220];
+        const hexColor = rgbToHex(color[0], color[1], color[2]);
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border transition ${isCurrent ? 'bg-[#1e2333] border-blue-500/60 shadow-lg shadow-blue-500/10' : 'bg-[#1c202d] border-[#293044]'}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <input type="radio" name="active-dpi-radio" ${isCurrent ? 'checked' : ''} onchange="setActiveDpiStage(${stageNum})" class="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-[#202534] border-gray-600">
+              <span class="text-xs font-bold uppercase tracking-wider text-gray-300">Stage ${stageNum}</span>
+              ${isCurrent ? '<span class="px-2 py-0.5 text-2xs font-bold rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Active</span>' : ''}
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 bg-[#232839] px-2 py-1 rounded-lg border border-[#2d3449]">
+                <input type="color" value="${hexColor}" onchange="updateStageColor(${stageNum}, this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                <span class="text-xs font-mono text-gray-400 uppercase">${hexColor}</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 bg-[#232839] px-3 py-1 rounded-lg border border-[#2d3449]">
+                <input type="number" min="100" max="26000" step="100" value="${dpiVal}" onchange="updateDpiValue(${stageNum}, this.value)" class="w-16 bg-transparent text-sm font-bold text-white text-right focus:outline-none">
+                <span class="text-xs text-gray-400">DPI</span>
+              </div>
+
+              ${stages.length > 1 ? `
+              <button onclick="removeDpiStage(${stageNum})" class="p-1.5 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition" title="Remove Stage">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>` : ''}
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <input type="range" min="100" max="26000" step="100" value="${dpiVal}" oninput="updateDpiSlider(${stageNum}, this.value)" onchange="applyDpiInstant()" class="w-full h-1.5 bg-[#252b3d] rounded-lg appearance-none cursor-pointer">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      const lod = prof.lod || 2;
+      document.getElementById('lod-1-btn').className = lod === 1 ? 'px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-semibold text-gray-400';
+      document.getElementById('lod-2-btn').className = lod === 2 ? 'px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-semibold text-gray-400';
+
+      document.getElementById('led-effect-select').value = prof.led_effect || 'steady';
+      document.getElementById('led-bright-slider').value = prof.brightness !== undefined ? prof.brightness : 15;
+      document.getElementById('led-bright-display').textContent = (prof.brightness !== undefined ? prof.brightness : 15) + ' / 255';
+
+      const btnsList = document.getElementById('buttons-list');
+      btnsList.innerHTML = '';
+      const btns = prof.buttons || { left: "left", right: "right", wheel: "wheel", thumb1: "forward", thumb2: "backward", dpi: "dpiloop" };
+      for (const [key, val] of Object.entries(btns)) {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-lg bg-[#202534] border border-[#2d3449]';
+        item.innerHTML = `
+          <span class="font-medium capitalize text-gray-300">${key}</span>
+          <span class="font-mono text-blue-400 uppercase font-semibold text-2xs">${val}</span>
+        `;
+        btnsList.appendChild(item);
+      }
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.replace('#', ''), 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    }
+
+    function switchProfileTab(num) {
+      appState.current_tab_profile = num;
+      renderProfileTab();
+    }
+
+    // Direct Control Actions (Auto-sends to mouse)
+    async function setPolling(rate) {
+      appState.globals.polling_rate = rate;
+      renderGlobals();
+      await executeSingleChange({ polling_rate: rate });
+    }
+    async function updateDebounce(val) {
+      appState.globals.debounce = parseInt(val);
+      document.getElementById('debounce-val').textContent = val + ' ms';
+    }
+    async function applyDebounceInstant(val) {
+      await executeSingleChange({ debounce: parseInt(val) });
+    }
+    async function updateSleep(val) {
+      appState.globals.power_saving = parseInt(val);
+      document.getElementById('sleep-val').textContent = val + ' s';
+    }
+    async function applySleepInstant(val) {
+      await executeSingleChange({ power_saving: parseInt(val) });
+    }
+    async function toggleMotionSync(val) {
+      appState.globals.motion_sync = !!val;
+      await executeSingleChange({ motion_sync: !!val });
+    }
+    async function toggleAngleSnap(val) {
+      appState.globals.angle_snap = !!val;
+      await executeSingleChange({ angle_snap: !!val });
+    }
+    async function toggleRipple(val) {
+      appState.globals.ripple_control = !!val;
+      await executeSingleChange({ ripple_control: !!val });
+    }
+    async function setLod(mm) {
+      const pIdx = appState.current_tab_profile - 1;
+      appState.profiles[pIdx].lod = mm;
+      renderProfileTab();
+      await executeSingleChange({ profile: appState.current_tab_profile, lod: mm });
+    }
+    async function updateLedEffect(val) {
+      const pIdx = appState.current_tab_profile - 1;
+      appState.profiles[pIdx].led_effect = val;
+      await executeSingleChange({ profile: appState.current_tab_profile, led_effect: val });
+    }
+    function updateBrightness(val) {
+      const pIdx = appState.current_tab_profile - 1;
+      appState.profiles[pIdx].brightness = parseInt(val);
+      document.getElementById('led-bright-display').textContent = val + ' / 255';
+    }
+    async function applyBrightnessInstant(val) {
+      await executeSingleChange({ profile: appState.current_tab_profile, brightness: parseInt(val) });
+    }
+
+    async function setActiveDpiStage(stageNum) {
+      const pIdx = appState.current_tab_profile - 1;
+      appState.profiles[pIdx].dpi.active = stageNum;
+      renderProfileTab();
+      await executeSingleChange({ profile: appState.current_tab_profile, active_stage: stageNum });
+    }
+
+    function updateDpiValue(stageNum, val) {
+      const pIdx = appState.current_tab_profile - 1;
+      const v = Math.max(100, Math.min(26000, parseInt(val) || 800));
+      appState.profiles[pIdx].dpi.stages[stageNum - 1] = [v, v];
+      renderProfileTab();
+      applyDpiInstant();
+    }
+
+    function updateDpiSlider(stageNum, val) {
+      const pIdx = appState.current_tab_profile - 1;
+      const v = parseInt(val);
+      appState.profiles[pIdx].dpi.stages[stageNum - 1] = [v, v];
+      renderProfileTab();
+    }
+
+    async function applyDpiInstant() {
+      const pIdx = appState.current_tab_profile - 1;
+      const prof = appState.profiles[pIdx];
+      const stages = prof.dpi.stages.map(s => Array.isArray(s) ? s[0] : s);
+      await executeSingleChange({
+        profile: appState.current_tab_profile,
+        dpi_stages: stages,
+        active_stage: prof.dpi.active
+      });
+    }
+
+    async function updateStageColor(stageNum, hex) {
+      const pIdx = appState.current_tab_profile - 1;
+      if (!appState.profiles[pIdx].stage_colors) {
+        appState.profiles[pIdx].stage_colors = [];
+      }
+      const rgb = hexToRgb(hex);
+      appState.profiles[pIdx].stage_colors[stageNum - 1] = rgb;
+      renderProfileTab();
+      await executeSingleChange({
+        profile: appState.current_tab_profile,
+        stage_colors: appState.profiles[pIdx].stage_colors
+      });
+    }
+
+    function addDpiStage() {
+      const pIdx = appState.current_tab_profile - 1;
+      const prof = appState.profiles[pIdx];
+      if (prof.dpi.stages.length >= 6) {
+        showToast("Maximum of 6 DPI stages reached", true);
+        return;
+      }
+      prof.dpi.stages.push([1600, 1600]);
+      prof.dpi.count = prof.dpi.stages.length;
+      if (!prof.stage_colors) prof.stage_colors = [];
+      prof.stage_colors.push([200, 200, 0]);
+      renderProfileTab();
+      applyDpiInstant();
+    }
+
+    function removeDpiStage(stageNum) {
+      const pIdx = appState.current_tab_profile - 1;
+      const prof = appState.profiles[pIdx];
+      if (prof.dpi.stages.length <= 1) return;
+      prof.dpi.stages.splice(stageNum - 1, 1);
+      prof.dpi.count = prof.dpi.stages.length;
+      if (prof.stage_colors && prof.stage_colors.length >= stageNum) {
+        prof.stage_colors.splice(stageNum - 1, 1);
+      }
+      if (prof.dpi.active > prof.dpi.stages.length) {
+        prof.dpi.active = prof.dpi.stages.length;
+      }
+      renderProfileTab();
+      applyDpiInstant();
+    }
+
+    async function setActiveProfile() {
+      appState.active_profile = appState.current_tab_profile;
+      renderProfileTab();
+      await executeSingleChange({ active_profile: appState.active_profile });
+    }
+
+    // Unified Transmitter (WebHID or Local API)
+    async function executeSingleChange(payload) {
+      if (appState.connectionMode === 'webhid' && appState.hidEngine) {
+        try {
+          const eng = appState.hidEngine;
+
+          if ('polling_rate' in payload) {
+            const map = { 125: 1, 250: 2, 500: 4, 1000: 8 };
+            await eng.sendCmd(0x01, 0x09, 0x02, 0x00, [map[payload.polling_rate] || 8]);
+          }
+          if ('debounce' in payload) {
+            await eng.sendCmd(0x04, 0x03, 0x03, 0x00, [payload.debounce]);
+          }
+          if ('motion_sync' in payload) {
+            await eng.sendCmd(0x07, 0x05, 0x02, 0x00, [payload.motion_sync ? 1 : 0]);
+          }
+          if ('angle_snap' in payload) {
+            await eng.sendCmd(0x07, 0x04, 0x02, 0x00, [payload.angle_snap ? 1 : 0]);
+          }
+          if ('ripple_control' in payload) {
+            await eng.sendCmd(0x07, 0x03, 0x02, 0x00, [payload.ripple_control ? 1 : 0]);
+          }
+          if ('power_saving' in payload) {
+            const sec = payload.power_saving;
+            await eng.sendCmd(0x08, 0x05, 0x03, 0x00, [sec & 0xFF, (sec >> 8) & 0xFF]);
+          }
+          if ('active_profile' in payload) {
+            await eng.sendCmd(0x02, 0x06, 0x01, payload.active_profile);
+          }
+          if ('lod' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            const lodMap = { 1: 0, 2: 1 };
+            const v = lodMap[payload.lod] ?? 1;
+            await eng.sendCmd(0x07, 0x02, 0x03, p, [v, v]);
+          }
+          if ('led_effect' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            const effMap = { 'off': 0, 'steady': 1, 'breathe': 2 };
+            await eng.sendCmd(0x03, 0x04, 0x0F, p, [0x01, effMap[payload.led_effect] ?? 1, 0, 0, 0]);
+          }
+          if ('brightness' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            await eng.sendCmd(0x03, 0x03, 0x03, p, [0x01, payload.brightness]);
+          }
+          if ('dpi_stages' in payload && 'active_stage' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            const stgs = payload.dpi_stages;
+            const act = payload.active_stage;
+            const pktPayload = [act, stgs.length];
+            for (let i = 0; i < stgs.length; i++) {
+              const d = stgs[i];
+              pktPayload.push(i + 1, d & 0xFF, (d >> 8) & 0xFF, d & 0xFF, (d >> 8) & 0xFF);
+            }
+            await eng.sendCmd(0x05, 0x04, 0x21, p, pktPayload);
+            await eng.sendCmd(0x05, 0x01, 0x02, p, [act]);
+          } else if ('active_stage' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            await eng.sendCmd(0x05, 0x01, 0x02, p, [payload.active_stage]);
+          }
+          if ('stage_colors' in payload) {
+            const p = payload.profile || appState.current_tab_profile;
+            for (let s = 1; s <= payload.stage_colors.length; s++) {
+              const rgb = payload.stage_colors[s - 1];
+              await eng.sendCmd(0x05, 0x05, 0x05, p, [s, rgb[0], rgb[1], rgb[2]]);
+            }
+          }
+
+          const desc = getChangeDescription(payload);
+          showToast('✓ ' + desc + ' (WebHID)');
+          return;
+        } catch (e) {
+          console.error("WebHID transmit error:", e);
+          showToast("WebHID error: " + e.message, true);
+          return;
+        }
+      }
+
+      // Fallback: Local API
+      try {
+        const resp = await fetch(API_BASE + '/api/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+          appState.connectionMode = "api";
+          renderHeader();
+          const desc = getChangeDescription(payload);
+          showToast('✓ ' + desc);
+        } else {
+          showToast('Service returned error', true);
+        }
+      } catch (e) {
+        console.warn("Local API fetch failed:", e);
+        if (window.location.protocol === 'file:') {
+          showToast('Opened via file:// — click "Connect WebHID" or open http://127.0.0.1:8080', true);
+        } else {
+          showToast('Mouse not connected! Click "Connect WebHID" to control mouse.', true);
+        }
+      }
+    }
+
+    function getChangeDescription(payload) {
+      if ('polling_rate' in payload) return `Polling rate set to ${payload.polling_rate} Hz`;
+      if ('debounce' in payload) return `Debounce time set to ${payload.debounce} ms`;
+      if ('motion_sync' in payload) return `Motion Sync turned ${payload.motion_sync ? 'ON' : 'OFF'}`;
+      if ('angle_snap' in payload) return `Angle Snap turned ${payload.angle_snap ? 'ON' : 'OFF'}`;
+      if ('ripple_control' in payload) return `Ripple Control turned ${payload.ripple_control ? 'ON' : 'OFF'}`;
+      if ('power_saving' in payload) return `Power saving sleep set to ${payload.power_saving} s`;
+      if ('active_profile' in payload) return `Switched to Profile ${payload.active_profile}`;
+      if ('active_stage' in payload) return `DPI Stage ${payload.active_stage} activated`;
+      if ('dpi_stages' in payload) return `DPI stages updated`;
+      if ('lod' in payload) return `LOD set to ${payload.lod} mm`;
+      if ('led_effect' in payload) return `LED effect set to ${payload.led_effect}`;
+      if ('brightness' in payload) return `Brightness set to ${payload.brightness}`;
+      return 'Mouse settings updated';
+    }
+
+    async function saveAllChanges() {
+      const pIdx = appState.current_tab_profile - 1;
+      const currentProf = appState.profiles[pIdx];
+
+      const fullPayload = {
+        active_profile: appState.active_profile,
+        polling_rate: appState.globals.polling_rate,
+        debounce: appState.globals.debounce,
+        motion_sync: appState.globals.motion_sync,
+        angle_snap: appState.globals.angle_snap,
+        ripple_control: appState.globals.ripple_control,
+        power_saving: appState.globals.power_saving,
+        profile: appState.current_tab_profile,
+        dpi_stages: currentProf.dpi.stages.map(s => Array.isArray(s) ? s[0] : s),
+        active_stage: currentProf.dpi.active,
+        stage_colors: currentProf.stage_colors,
+        lod: currentProf.lod,
+        led_effect: currentProf.led_effect,
+        brightness: currentProf.brightness
+      };
+
+      await executeSingleChange(fullPayload);
+    }
+
+    // Direct WebHID Connection Workflow
+    async function connectWebHID() {
+      if (!('hid' in navigator)) {
+        alert("WebHID is not supported in this browser. Please open this file in Google Chrome, Microsoft Edge, Brave, or Opera.");
+        return;
+      }
+      try {
+        const selected = await navigator.hid.requestDevice({
+          filters: [
+            { vendorId: 0x3710 }
+          ]
+        });
+
+        if (!selected || selected.length === 0) return;
+
+        const allGranted = await navigator.hid.getDevices();
+        const candidates = Array.from(new Set([...selected, ...allGranted]));
+
+        let targetDevice = null;
+        let targetEngine = null;
+
+        for (const dev of candidates) {
+          if (dev.vendorId !== 0x3710) continue;
+          try {
+            if (!dev.opened) await dev.open();
+            const engine = new PulsarHIDEngine(dev);
+            // Probe polling rate: cat=0x01, reg=0x09, sub=0x02, profile=0x00
+            const rsp = await engine.read(0x01, 0x09, 0x02, 0x00);
+            if (rsp[0] === 0x01 && rsp[1] === 0x01) {
+              targetDevice = dev;
+              targetEngine = engine;
+              break;
+            }
+          } catch (e) {
+            console.warn("Candidate probe error:", e);
+            try { await dev.close(); } catch (_) {}
+          }
+        }
+
+        if (targetDevice && targetEngine) {
+          appState.hidEngine = targetEngine;
+          appState.connectionMode = "webhid";
+          renderHeader();
+          showToast("✓ Connected to Pulsar mouse via WebHID!");
+          await readActiveSettings();
+        } else {
+          showModal(
+            "Select Configuration Interface",
+            "Windows lists two '1K Dongle' entries in the browser permission popup (one is the telemetry/data channel, and one is the mouse configuration interface).\n\nPlease click 'Connect WebHID' again and select the OTHER '1K Dongle' entry from the browser list!"
+          );
+        }
+      } catch (err) {
+        if (err.name !== 'NotFoundError') {
+          console.error(err);
+          showToast("WebHID error: " + err.message, true);
+        }
+      }
+    }
+
+    async function autoConnectWebHID() {
+      if (!('hid' in navigator)) return false;
+      try {
+        const devices = await navigator.hid.getDevices();
+        for (const dev of devices) {
+          if (dev.vendorId !== 0x3710) continue;
+          try {
+            if (!dev.opened) await dev.open();
+            const engine = new PulsarHIDEngine(dev);
+            const rsp = await engine.read(0x01, 0x09, 0x02, 0x00);
+            if (rsp[0] === 0x01 && rsp[1] === 0x01) {
+              appState.hidEngine = engine;
+              appState.connectionMode = 'webhid';
+              renderHeader();
+              showToast("✓ Mouse auto-connected via WebHID!");
+              await readActiveSettings();
+              return true;
+            }
+          } catch (_) {
+            try { await dev.close(); } catch (_) {}
+          }
+        }
+      } catch (err) {
+        console.warn("Auto-connect check failed:", err);
+      }
+      return false;
+    }
+
+    async function disconnectWebHID() {
+      if (appState.hidEngine && appState.hidEngine.device) {
+        try {
+          await appState.hidEngine.device.close();
+        } catch (_) {}
+      }
+      appState.hidEngine = null;
+      appState.connectionMode = 'none';
+      renderHeader();
+      showToast("Disconnected from mouse.");
+    }
+
+    async function readActiveSettings() {
+      const eng = appState.hidEngine;
+      if (!eng) return;
+
+      try {
+        // Polling rate
+        try {
+          const pollRsp = await eng.read(0x01, 0x09, 0x02, 0x00);
+          const POLL_VAL_TO_HZ = { 1: 125, 2: 250, 4: 500, 8: 1000 };
+          appState.globals.polling_rate = POLL_VAL_TO_HZ[pollRsp[7]] || 1000;
+        } catch (_) {}
+
+        // Debounce
+        try {
+          const debRsp = await eng.read(0x04, 0x03, 0x03, 0x00);
+          appState.globals.debounce = debRsp[7];
+        } catch (_) {}
+
+        // Motion Sync
+        try {
+          const msRsp = await eng.read(0x07, 0x05, 0x02, 0x00);
+          appState.globals.motion_sync = !!msRsp[7];
+        } catch (_) {}
+
+        // Angle Snap
+        try {
+          const asRsp = await eng.read(0x07, 0x04, 0x02, 0x00);
+          appState.globals.angle_snap = !!asRsp[7];
+        } catch (_) {}
+
+        // Ripple Control
+        try {
+          const rcRsp = await eng.read(0x07, 0x03, 0x02, 0x00);
+          appState.globals.ripple_control = !!rcRsp[7];
+        } catch (_) {}
+
+        // Auto Sleep
+        try {
+          const slpRsp = await eng.read(0x08, 0x05, 0x03, 0x00);
+          appState.globals.power_saving = slpRsp[7] | (slpRsp[8] << 8);
+        } catch (_) {}
+
+        // Battery
+        try {
+          const batRsp = await eng.read(0x08, 0x01, 0x01, 0x00);
+          const chgRsp = await eng.read(0x08, 0x03, 0x01, 0x00);
+          appState.battery = {
+            battery_percent: batRsp[6],
+            power_connected: !!chgRsp[6]
+          };
+        } catch (_) {}
+
+        // Active Profile
+        try {
+          const profRsp = await eng.read(0x02, 0x06, 0x01, 0x00);
+          const act = profRsp[6] || profRsp[7] || 1;
+          appState.active_profile = act;
+          appState.current_tab_profile = act;
+        } catch (_) {}
+
+        // Read active profile details
+        await readProfileSettings(appState.current_tab_profile);
+
+        renderHeader();
+        renderGlobals();
+        renderProfileTab();
+      } catch (err) {
+        console.error("Read active settings error:", err);
+      }
+    }
+
+    async function readProfileSettings(p) {
+      const eng = appState.hidEngine;
+      if (!eng) return;
+      try {
+        const dpiRsp = await eng.read(0x05, 0x04, 0x15, p);
+        const activeStage = dpiRsp[7];
+        const numStages = dpiRsp[8];
+        const stages = [];
+        for (let i = 0; i < numStages; i++) {
+          const base = 9 + i * 5;
+          const dx = dpiRsp[base + 1] | (dpiRsp[base + 2] << 8);
+          const dy = dpiRsp[base + 3] | (dpiRsp[base + 4] << 8);
+          stages.push([dx, dy]);
+        }
+        appState.profiles[p - 1].dpi = { active: activeStage, count: numStages, stages };
+
+        const colors = [];
+        for (let s = 1; s <= numStages; s++) {
+          try {
+            const colRsp = await eng.read(0x05, 0x05, 0x05, p, [s]);
+            colors.push([colRsp[8], colRsp[9], colRsp[10]]);
+          } catch (_) {
+            colors.push([10, 10, 220]);
+          }
+        }
+        appState.profiles[p - 1].stage_colors = colors;
+
+        try {
+          const lodRsp = await eng.read(0x07, 0x02, 0x03, p);
+          appState.profiles[p - 1].lod = lodRsp[7] === 1 ? 2 : 1;
+        } catch (_) {}
+
+        try {
+          const ledRsp = await eng.read(0x03, 0x04, 0x0F, p, [0x01]);
+          const brightRsp = await eng.read(0x03, 0x03, 0x03, p, [0x01]);
+          const LED_VAL_TO_NAME = { 0: 'off', 1: 'steady', 2: 'breathe' };
+          appState.profiles[p - 1].led_effect = LED_VAL_TO_NAME[ledRsp[8]] || 'steady';
+          appState.profiles[p - 1].brightness = brightRsp[8];
+        } catch (_) {}
+      } catch (e) {
+        console.warn(`Profile ${p} read error:`, e);
+      }
+    }
+
+    // Refresh from Device
+    async function refreshData() {
+      if (appState.connectionMode === 'webhid' && appState.hidEngine) {
+        showToast("Reading settings from mouse...");
+        await readActiveSettings();
+        return;
+      }
+
+      // Check auto-connect
+      const connected = await autoConnectWebHID();
+      if (connected) return;
+
+      // Fallback: Local API
+      try {
+        const resp = await fetch(API_BASE + '/api/status');
+        if (resp.ok) {
+          const data = await resp.json();
+          appState.connectionMode = "api";
+          appState.device = data.name || appState.device;
+          appState.firmware = data.firmware || appState.firmware;
+          if (data.battery) appState.battery = data.battery;
+          if (data.active_profile) appState.active_profile = data.active_profile;
+          if (data.polling_rate) appState.globals.polling_rate = data.polling_rate;
+          if (data.debounce !== null) appState.globals.debounce = data.debounce;
+          if (data.motion_sync !== null) appState.globals.motion_sync = data.motion_sync;
+          if (data.angle_snap !== null) appState.globals.angle_snap = data.angle_snap;
+          if (data.ripple_control !== null) appState.globals.ripple_control = data.ripple_control;
+          if (data.power_saving !== null) appState.globals.power_saving = data.power_saving;
+          if (data.profiles && data.profiles.length) {
+            appState.profiles = data.profiles;
+          }
+          renderHeader();
+          renderGlobals();
+          renderProfileTab();
+          showToast('Updated settings from mouse!');
+          return;
+        }
+      } catch (_) {}
+
+      appState.connectionMode = "none";
+      renderHeader();
+    }
+
+    // Modal Helpers
+    function showModal(title, msg) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-desc').textContent = msg;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    // Toast Notification
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+      toastMsg.textContent = msg;
+      toastIcon.className = isError ? 'w-5 h-5 text-red-400' : 'w-5 h-5 text-emerald-400';
+      toast.classList.remove('opacity-0', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-2');
+      }, 2500);
+    }
+
+    // Device Hotplug Listeners
+    if ('hid' in navigator) {
+      navigator.hid.addEventListener('disconnect', (event) => {
+        if (appState.hidEngine && appState.hidEngine.device === event.device) {
+          appState.hidEngine = null;
+          appState.connectionMode = 'none';
+          renderHeader();
+          showToast("Mouse disconnected", true);
+        }
+      });
+      navigator.hid.addEventListener('connect', async () => {
+        await autoConnectWebHID();
+      });
+    }
+
+    // Initialize UI and attempt Auto-Connect
+    renderHeader();
+    renderGlobals();
+    renderProfileTab();
+    autoConnectWebHID().then(connected => {
+      if (!connected) {
+        refreshData();
+      }
+    });
+  </script>
+</body>
+</html>
