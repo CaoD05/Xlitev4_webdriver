@@ -286,7 +286,7 @@
 
     <!-- Help / Guidance Modal -->
     <div id="modal" class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-      <div class="bg-[#181b26] border border-[#2d3449] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="bg-[#181b26] border border-[#2d3449] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4">
         <div class="flex items-center gap-3 text-amber-400">
           <div class="p-2.5 rounded-xl bg-amber-500/20">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -351,9 +351,18 @@
 
       async sendCmd(cat, reg, sub, profile = 0, payload = []) {
         return this.enqueue(async () => {
-          if (!this.device || !this.device.opened) throw new Error("Mouse not connected");
+          if (!this.device || !this.device.opened) {
+            const err = new Error("Mouse not connected or device not opened");
+            console.error("[WebHID Engine]", err.message);
+            throw err;
+          }
           const pkt = this.buildPacket(cat, reg, sub, profile, payload);
-          await this.device.sendFeatureReport(0, pkt);
+          try {
+            await this.device.sendFeatureReport(0, pkt);
+          } catch (e) {
+            console.error(`[WebHID Engine] sendFeatureReport command failed (cat: 0x${cat.toString(16)}, reg: 0x${reg.toString(16)}):`, e);
+            throw e;
+          }
           for (let i = 0; i < 20; i++) {
             await new Promise(r => setTimeout(r, 20));
             try {
@@ -370,9 +379,18 @@
 
       async read(cat, reg, sub, profile = 0, payload = []) {
         return this.enqueue(async () => {
-          if (!this.device || !this.device.opened) throw new Error("Mouse not connected");
+          if (!this.device || !this.device.opened) {
+            const err = new Error("Mouse not connected or device not opened");
+            console.error("[WebHID Engine]", err.message);
+            throw err;
+          }
           const pkt = this.buildReadPacket(cat, reg, sub, profile, payload);
-          await this.device.sendFeatureReport(0, pkt);
+          try {
+            await this.device.sendFeatureReport(0, pkt);
+          } catch (e) {
+            console.error(`[WebHID Engine] sendFeatureReport read query failed (cat: 0x${cat.toString(16)}, reg: 0x${reg.toString(16)}):`, e);
+            throw e;
+          }
           for (let i = 0; i < 30; i++) {
             await new Promise(r => setTimeout(r, 20));
             try {
@@ -383,30 +401,38 @@
               }
             } catch (_) {}
           }
-          throw new Error(`Device read query timed out (cat: 0x${cat.toString(16)}, reg: 0x${reg.toString(16)})`);
+          const timeoutErr = new Error(`Device read query timed out (cat: 0x${cat.toString(16)}, reg: 0x${reg.toString(16)})`);
+          console.warn(`[WebHID Engine] ${timeoutErr.message}`);
+          throw timeoutErr;
         });
       }
 
       async probe() {
         return this.enqueue(async () => {
-          if (!this.device || !this.device.opened) return false;
+          if (!this.device || !this.device.opened) {
+            return { ok: false, reason: "Device is not opened" };
+          }
           const pkt = this.buildReadPacket(0x01, 0x09, 0x02, 0x00);
-          await this.device.sendFeatureReport(0, pkt);
+          try {
+            await this.device.sendFeatureReport(0, pkt);
+          } catch (sendErr) {
+            return { ok: false, reason: `sendFeatureReport failed: ${sendErr.message || sendErr}` };
+          }
           for (let i = 0; i < 30; i++) {
             await new Promise(r => setTimeout(r, 25));
             try {
               const dv = await this.device.receiveFeatureReport(0);
               const rsp = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
               if (rsp.length >= 64 && (rsp[0] === 0x01 || rsp[0] === 0x02 || rsp[0] === 0x05) && rsp[1] === 0x01 && (rsp[2] & 0x7F) === 0x09) {
-                return true;
+                return { ok: true, reason: `Handshake verified on attempt ${i + 1} (response header [0x${rsp[0].toString(16)}, 0x${rsp[1].toString(16)}, 0x${rsp[2].toString(16)}])` };
               }
               // Telemetry channel (Interface 2) returns short buffer ([0, 0]), fail early
               if (rsp.length < 64 && i >= 3) {
-                return false;
+                return { ok: false, reason: `Telemetry channel detected (received short report of ${rsp.length} bytes). This is Interface 2 (mouse data stream), not Interface 3 (configuration channel)` };
               }
             } catch (_) {}
           }
-          return false;
+          return { ok: false, reason: "Handshake timed out after 750ms without 64-byte configuration response" };
         });
       }
     }
@@ -479,6 +505,7 @@
     };
 
     const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:8080';
+    const SUPPORTED_VIDS = [0x3710, 0x25a7, 0x3554];
 
     // UI Renderers
     function renderHeader() {
@@ -865,9 +892,10 @@
 
           const desc = getChangeDescription(payload);
           showToast('✓ ' + desc + ' (WebHID)');
+          console.log(`%c[WebHID Transmit Success] Applied: ${desc}`, "color: #10b981; font-weight: bold;");
           return;
         } catch (e) {
-          console.error("WebHID transmit error:", e);
+          console.error("[WebHID Transmit Error] Failed to send update to mouse:", e);
           showToast("WebHID error: " + e.message, true);
           return;
         }
@@ -875,6 +903,7 @@
 
       // Fallback: Local API
       try {
+        console.log(`[Local API Transmit] Sending payload to ${API_BASE}/api/apply:`, payload);
         const resp = await fetch(API_BASE + '/api/apply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -884,12 +913,14 @@
           appState.connectionMode = "api";
           renderHeader();
           const desc = getChangeDescription(payload);
+          console.log(`%c[Local API Transmit Success] Applied: ${desc}`, "color: #10b981; font-weight: bold;");
           showToast('✓ ' + desc);
         } else {
+          console.error(`[Local API Transmit Error] HTTP ${resp.status}: ${resp.statusText}`);
           showToast('Service returned error', true);
         }
       } catch (e) {
-        console.warn("Local API fetch failed:", e);
+        console.warn("[Local API Transmit Error] Local API fetch failed:", e);
         if (window.location.protocol === 'file:') {
           showToast('Opened via file:// — click "Connect WebHID" or open http://127.0.0.1:8080', true);
         } else {
@@ -939,77 +970,216 @@
     }
 
     async function safeOpen(dev) {
-      if (dev.opened) return true;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      if (dev.opened) {
+        console.log(`[WebHID] Device "${dev.productName || 'Device'}" is already open.`);
+        return { ok: true };
+      }
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
+          console.log(`[WebHID] Attempting to open "${dev.productName || 'Device'}" (attempt ${attempt}/3)...`);
           await dev.open();
-          return true;
+          console.log(`[WebHID] Successfully opened "${dev.productName || 'Device'}".`);
+          return { ok: true };
         } catch (err) {
-          if (attempt < 2) await new Promise(r => setTimeout(r, 120));
+          lastErr = err;
+          console.warn(`[WebHID] dev.open() attempt ${attempt}/3 failed for "${dev.productName || 'Device'}":`, err.name, err.message);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 120));
         }
       }
-      return false;
+
+      const errDesc = lastErr ? `${lastErr.name}: ${lastErr.message}` : "Failed to open";
+      console.error(`[WebHID] Could not open device "${dev.productName || 'Device'}": ${errDesc}`);
+
+      if (navigator.userAgent.includes("Linux") || (lastErr && (lastErr.name === "SecurityError" || lastErr.name === "NotAllowedError"))) {
+        console.warn(`[WebHID Linux Permission Diagnostic]
+• Linux requires udev rules to grant user access to /dev/hidraw* devices.
+• Ensure /etc/udev/rules.d/50-pulsar-mouse.rules exists with MODE="0660", TAG+="uaccess".
+• Apply rules:
+    sudo cp udev/50-pulsar-mouse.rules /etc/udev/rules.d/
+    sudo udevadm control --reload-rules && sudo udevadm trigger
+• Then unplug and replug the mouse or dongle.`);
+      } else {
+        console.warn(`[WebHID Lock Diagnostic]
+• Another program may have exclusive access to this device (e.g., official Pulsar software, python backend daemon, or another browser tab).
+• Close any other mouse configuration utilities or restart the browser.`);
+      }
+
+      return { ok: false, error: errDesc };
     }
 
     async function probeAndConnectDevice(dev) {
-      if (!dev || dev.vendorId !== 0x3710) return null;
-      const opened = await safeOpen(dev);
-      if (!opened) return null;
+      if (!dev) return { engine: null, reason: "Null device reference" };
+      const vidHex = '0x' + (dev.vendorId || 0).toString(16).padStart(4, '0');
+      const pidHex = '0x' + (dev.productId || 0).toString(16).padStart(4, '0');
+      const devName = dev.productName || `Device (${vidHex}:${pidHex})`;
+
+      console.group(`[WebHID Candidate] Probing "${devName}" (VID: ${vidHex}, PID: ${pidHex})`);
+
+      // Log HID collections
+      if (dev.collections && dev.collections.length > 0) {
+        const collectionsSummary = dev.collections.map(c => ({
+          usagePage: '0x' + c.usagePage.toString(16),
+          usage: '0x' + c.usage.toString(16),
+          featureReports: c.featureReports ? c.featureReports.length : 0,
+          inputReports: c.inputReports ? c.inputReports.length : 0,
+          outputReports: c.outputReports ? c.outputReports.length : 0
+        }));
+        console.log(`[WebHID Candidate Collections]`, collectionsSummary);
+      } else {
+        console.log(`[WebHID Candidate Collections] No HID collections exposed`);
+      }
+
+      if (!SUPPORTED_VIDS.includes(dev.vendorId)) {
+        const reason = `Device VID ${vidHex} not in supported Pulsar vendor IDs (${SUPPORTED_VIDS.map(v => '0x' + v.toString(16)).join(', ')})`;
+        console.warn(`[WebHID Candidate] Skipped: ${reason}`);
+        console.groupEnd();
+        return { engine: null, reason };
+      }
+
+      const openRes = await safeOpen(dev);
+      if (!openRes.ok) {
+        console.groupEnd();
+        return { engine: null, reason: `Failed to open device (${openRes.error})` };
+      }
+
       try {
         const engine = new PulsarHIDEngine(dev);
-        const ok = await engine.probe();
-        if (ok) return engine;
+        console.log(`[WebHID Candidate] Sending handshake probe packet to "${devName}"...`);
+        const probeRes = await engine.probe();
+        if (probeRes.ok) {
+          console.log(`%c[WebHID Candidate Success] Handshake confirmed for "${devName}"! (${probeRes.reason})`, "color: #10b981; font-weight: bold;");
+          console.groupEnd();
+          return { engine, reason: "Verified configuration channel" };
+        } else {
+          console.warn(`[WebHID Candidate Incompatible] "${devName}": ${probeRes.reason}`);
+          try { await dev.close(); } catch (_) {}
+          console.groupEnd();
+          return { engine: null, reason: probeRes.reason };
+        }
       } catch (e) {
-        console.warn("Probe error:", e);
+        console.error(`[WebHID Candidate Exception] Error while probing "${devName}":`, e);
+        try { await dev.close(); } catch (_) {}
+        console.groupEnd();
+        return { engine: null, reason: `Probe exception: ${e.message || e}` };
       }
-      try { await dev.close(); } catch (_) {}
-      return null;
     }
 
     // Direct WebHID Connection Workflow
     async function connectWebHID(forcePrompt = false) {
+      console.group(`[WebHID Connect] Connection attempt started (forcePrompt=${forcePrompt})`);
+
       if (!('hid' in navigator)) {
+        console.error("[WebHID Error] WebHID API is not supported in this browser or context.", {
+          hasNavigatorHid: 'hid' in navigator,
+          isSecureContext: window.isSecureContext,
+          protocol: window.location.protocol,
+          userAgent: navigator.userAgent
+        });
+        if (!window.isSecureContext) {
+          console.error("[WebHID Error] window.isSecureContext is false! WebHID strictly requires a Secure Context (HTTPS or http://localhost).");
+        }
+        console.groupEnd();
         alert("WebHID is not supported in this browser. Please open this file in Google Chrome, Microsoft Edge, Brave, or Opera.");
         return;
       }
-      if (appState.isConnecting) return;
+
+      if (appState.isConnecting) {
+        console.log("[WebHID Connect] A connection attempt is already in progress.");
+        console.groupEnd();
+        return;
+      }
       appState.isConnecting = true;
+
+      const diagnosticReports = [];
 
       try {
         // 1. If not forcing browser prompt, try connecting to already granted devices first
         if (!forcePrompt) {
+          console.log("[WebHID Connect] Checking previously granted browser device permissions...");
           const granted = await navigator.hid.getDevices();
-          const pulsarDevs = granted.filter(d => d.vendorId === 0x3710).reverse();
-          for (const dev of pulsarDevs) {
-            const engine = await probeAndConnectDevice(dev);
-            if (engine) {
-              appState.hidEngine = engine;
-              appState.connectionMode = "webhid";
-              renderHeader();
-              showToast("✓ Connected to Pulsar mouse via WebHID!");
-              await readActiveSettings();
-              return;
+          console.log(`[WebHID Connect] Found ${granted.length} previously granted HID device(s) total.`);
+
+          const pulsarDevs = granted.filter(d => SUPPORTED_VIDS.includes(d.vendorId)).reverse();
+          if (pulsarDevs.length > 0) {
+            console.log(`[WebHID Connect] Found ${pulsarDevs.length} previously granted Pulsar device(s). Probing...`);
+            for (const dev of pulsarDevs) {
+              const { engine, reason } = await probeAndConnectDevice(dev);
+              diagnosticReports.push({
+                device: dev.productName || 'Pulsar Device',
+                vid: '0x' + (dev.vendorId || 0).toString(16).padStart(4, '0'),
+                pid: '0x' + (dev.productId || 0).toString(16).padStart(4, '0'),
+                source: 'Previously Granted',
+                status: engine ? 'Connected ✓' : 'Failed ✗',
+                diagnostic: reason
+              });
+              if (engine) {
+                appState.hidEngine = engine;
+                appState.connectionMode = "webhid";
+                renderHeader();
+                showToast("✓ Connected to Pulsar mouse via WebHID!");
+                console.log(`%c[WebHID Connect] Successfully connected to "${dev.productName}"!`, "color: #10b981; font-weight: bold;");
+                await readActiveSettings();
+                return;
+              }
             }
+            console.warn("[WebHID Connect] None of the previously granted devices responded as a configuration channel. Opening browser picker...");
+          } else {
+            console.log("[WebHID Connect] No previously granted Pulsar devices found. Opening browser picker...");
           }
         }
 
         // 2. Request device from browser list
-        const selected = await navigator.hid.requestDevice({
-          filters: [
-            { vendorId: 0x3710 }
-          ]
-        });
+        console.log("[WebHID Connect] Opening browser device selection dialog with filters:", SUPPORTED_VIDS.map(v => ({ vendorId: '0x' + v.toString(16) })));
+        let selected = [];
+        try {
+          selected = await navigator.hid.requestDevice({
+            filters: SUPPORTED_VIDS.map(vid => ({ vendorId: vid }))
+          });
+        } catch (reqErr) {
+          if (reqErr.name === 'NotFoundError') {
+            console.info("[WebHID Connect] Device selection dialog was closed or cancelled by the user.");
+            return;
+          }
+          console.error("[WebHID Connect] navigator.hid.requestDevice failed:", reqErr.name, reqErr.message);
+          diagnosticReports.push({
+            device: 'Device Chooser',
+            vid: 'N/A',
+            pid: 'N/A',
+            source: 'requestDevice',
+            status: 'Error ✗',
+            diagnostic: reqErr.name + ': ' + reqErr.message
+          });
+          throw reqErr;
+        }
 
-        if (!selected || selected.length === 0) return;
+        if (!selected || selected.length === 0) {
+          console.info("[WebHID Connect] No device was selected in picker.");
+          return;
+        }
+
+        console.log(`[WebHID Connect] User selected ${selected.length} device(s):`, selected.map(d => `${d.productName} (0x${d.vendorId.toString(16)}:0x${d.productId.toString(16)})`));
 
         // Collect all candidates, prioritizing newly selected and reverse order (Interface 3 first)
         const allGranted = await navigator.hid.getDevices();
         const candidates = Array.from(new Set([...selected, ...allGranted])).reverse();
+        console.log(`[WebHID Connect] Probing ${candidates.length} candidate device(s)/interface(s)...`);
 
         let targetEngine = null;
         for (const dev of candidates) {
-          targetEngine = await probeAndConnectDevice(dev);
-          if (targetEngine) break;
+          const { engine, reason } = await probeAndConnectDevice(dev);
+          diagnosticReports.push({
+            device: dev.productName || 'Pulsar Device',
+            vid: '0x' + (dev.vendorId || 0).toString(16).padStart(4, '0'),
+            pid: '0x' + (dev.productId || 0).toString(16).padStart(4, '0'),
+            source: selected.includes(dev) ? 'Selected by User' : 'Granted Permission',
+            status: engine ? 'Connected ✓' : 'Failed ✗',
+            diagnostic: reason
+          });
+          if (engine) {
+            targetEngine = engine;
+            break;
+          }
         }
 
         if (targetEngine) {
@@ -1017,48 +1187,128 @@
           appState.connectionMode = "webhid";
           renderHeader();
           showToast("✓ Connected to Pulsar mouse via WebHID!");
+          console.log(`%c[WebHID Connect] Successfully connected to "${targetEngine.device.productName}"!`, "color: #10b981; font-weight: bold;");
           await readActiveSettings();
         } else {
-          showModal(
-            "Select the 2nd (Bottom) '1K Dongle'",
-            "Windows lists two '1K Dongle' entries in the browser list:\n\n• 1st Entry (Top): Mouse movement telemetry stream\n• 2nd Entry (Bottom): Mouse settings & configuration interface\n\nPlease click below and select the SECOND (bottom) '1K Dongle' in the browser list."
-          );
+          console.group("%c[WebHID Connection Report: ALL CANDIDATES FAILED]", "color: #ef4444; font-weight: bold; font-size: 13px;");
+          console.error("Could not establish a working connection with any candidate device.");
+          console.log("Candidate Diagnostic Table:");
+          console.table(diagnosticReports);
+          const isLinux = navigator.userAgent.includes("Linux");
+          const allFailedOpen = diagnosticReports.length > 0 && diagnosticReports.every(r => r.diagnostic && r.diagnostic.includes("Failed to open device"));
+
+          if (isLinux && allFailedOpen) {
+            console.error(`[WebHID Ubuntu/Linux Diagnostic]
+Access to /dev/hidraw was denied for all candidate devices.
+Root Causes & Solutions on Ubuntu:
+1. Chromium Snap Sandbox Confinement (Default on Ubuntu):
+   Ubuntu packages Chromium as a Snap. By default, Snap forbids access to raw USB / hidraw nodes.
+   Run in your Ubuntu terminal:
+     sudo snap connect chromium:raw-usb
+2. Missing or unapplied udev rules:
+   Normal users cannot access /dev/hidraw* without system udev permissions.
+   Run in your terminal:
+     sudo cp udev/50-pulsar-mouse.rules /etc/udev/rules.d/
+     sudo udevadm control --reload-rules && sudo udevadm trigger
+   Then unplug and replug the 1K dongle.
+3. Native Google Chrome (.deb) Alternative:
+   If the Snap package still blocks hidraw ioctls, install native Google Chrome (.deb) from https://google.com/chrome, which operates without Snap sandbox restrictions.`);
+            console.groupEnd();
+
+            showModal(
+              "Ubuntu / Linux: Access Denied to Mouse",
+              `<div class="space-y-3 text-left">
+                <p class="text-amber-300 font-medium">Chromium was blocked by Linux permissions or the Snap sandbox from opening the mouse device node (<code class="bg-[#202534] px-1.5 py-0.5 rounded text-gray-200">/dev/hidraw*</code>).</p>
+                <div>
+                  <div class="text-xs font-semibold text-white mb-1">1. Allow Snap Chromium access to raw USB:</div>
+                  <div class="bg-[#10131c] p-2 rounded-lg border border-[#2d3449] font-mono text-2xs text-emerald-400 select-all">sudo snap connect chromium:raw-usb</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-white mb-1">2. Install Pulsar udev rules:</div>
+                  <div class="bg-[#10131c] p-2 rounded-lg border border-[#2d3449] font-mono text-2xs text-emerald-400 select-all">sudo cp udev/50-pulsar-mouse.rules /etc/udev/rules.d/<br>sudo udevadm control --reload-rules && sudo udevadm trigger</div>
+                </div>
+                <p class="text-gray-400 text-2xs">After running these commands, <strong class="text-white">unplug and replug the dongle</strong>, then retry. Alternatively, install native <strong class="text-white">Google Chrome (.deb)</strong> which is not restricted by Snap.</p>
+              </div>`,
+              "Retry Connection",
+              () => connectWebHID(true)
+            );
+          } else {
+            console.info(`[WebHID Troubleshooting Guide]
+1. Dual-interface dongles:
+   • Pulsar wireless dongles expose two entries (e.g., two '1K Dongle' entries in Chrome's picker).
+   • One is Interface 2 (mouse movement data), and the other is Interface 3 (configuration commands).
+   • If you picked the top entry, click 'Connect WebHID' again and select the OTHER (bottom) entry.
+2. Linux permissions:
+   • If dev.open() failed with SecurityError or Access denied, check /dev/hidraw*:
+     ls -l /dev/hidraw*
+   • Install udev rules:
+     sudo cp udev/50-pulsar-mouse.rules /etc/udev/rules.d/
+     sudo udevadm control --reload-rules && sudo udevadm trigger
+   • Unplug and replug your mouse or 2.4GHz receiver dongle.
+3. Exclusive application lock:
+   • Close official Pulsar software, Python CLI/GUI, or other browser tabs that may hold the device open.
+4. Mouse sleep / connection state:
+   • Move the mouse or click a button to ensure it is awake and not in power saving sleep.`);
+            console.groupEnd();
+
+            showModal(
+              "Select the 2nd (Bottom) '1K Dongle'",
+              `Windows and Linux list multiple entries in the browser list:
+
+• <strong class="text-white">1st Entry (Top):</strong> Mouse movement telemetry stream
+• <strong class="text-white">2nd Entry (Bottom):</strong> Mouse settings & configuration interface
+
+Please click below and select the <strong class="text-blue-400">SECOND (bottom) '1K Dongle'</strong> in the browser list.`,
+              "Select 2nd (Bottom) Entry",
+              () => connectWebHID(true)
+            );
+          }
         }
       } catch (err) {
         if (err.name !== 'NotFoundError') {
-          console.error(err);
+          console.error("[WebHID Connect Exception]", err);
           showToast("WebHID error: " + err.message, true);
         }
       } finally {
         appState.isConnecting = false;
+        console.groupEnd();
       }
     }
 
     async function autoConnectWebHID() {
       if (!('hid' in navigator) || appState.isConnecting) return false;
+      console.log("[WebHID AutoConnect] Checking for previously granted Pulsar devices...");
       appState.isConnecting = true;
       try {
         const devices = await navigator.hid.getDevices();
-        const pulsarDevs = devices.filter(d => d.vendorId === 0x3710);
-        if (pulsarDevs.length === 0) return false;
+        const pulsarDevs = devices.filter(d => SUPPORTED_VIDS.includes(d.vendorId));
+        if (pulsarDevs.length === 0) {
+          console.log("[WebHID AutoConnect] No previously granted Pulsar devices found in browser.");
+          return false;
+        }
+        console.log(`[WebHID AutoConnect] Found ${pulsarDevs.length} granted Pulsar device(s). Attempting auto-connection...`);
 
         // Windows lists Interface 2 first and Interface 3 last.
         // Reversing prioritizes Interface 3 (configuration channel), connecting immediately in ~50ms
         // and avoiding any RF delay or packet collision on Interface 2.
         const prioritized = pulsarDevs.slice().reverse();
         for (const dev of prioritized) {
-          const engine = await probeAndConnectDevice(dev);
+          const { engine, reason } = await probeAndConnectDevice(dev);
           if (engine) {
             appState.hidEngine = engine;
             appState.connectionMode = 'webhid';
             renderHeader();
             showToast("✓ Mouse auto-connected via WebHID!");
+            console.log(`%c[WebHID AutoConnect] Successfully auto-connected to "${dev.productName}"!`, "color: #10b981; font-weight: bold;");
             await readActiveSettings();
             return true;
+          } else {
+            console.log(`[WebHID AutoConnect] "${dev.productName}" skipped: ${reason}`);
           }
         }
+        console.warn("[WebHID AutoConnect] Could not auto-connect to any granted Pulsar device. Click 'Connect WebHID' to select a device.");
       } catch (err) {
-        console.warn("Auto-connect check failed:", err);
+        console.warn("[WebHID AutoConnect] Auto-connect check failed with error:", err);
       } finally {
         appState.isConnecting = false;
       }
@@ -1066,10 +1316,14 @@
     }
 
     async function disconnectWebHID() {
+      console.log("[WebHID] Disconnecting device...");
       if (appState.hidEngine && appState.hidEngine.device) {
         try {
           await appState.hidEngine.device.close();
-        } catch (_) {}
+          console.log("[WebHID] Device closed successfully.");
+        } catch (err) {
+          console.warn("[WebHID] Error while closing device:", err);
+        }
       }
       appState.hidEngine = null;
       appState.connectionMode = 'none';
@@ -1079,7 +1333,11 @@
 
     async function readActiveSettings() {
       const eng = appState.hidEngine;
-      if (!eng) return;
+      if (!eng) {
+        console.warn("[WebHID Settings] Cannot read settings: HID engine is not initialized.");
+        return;
+      }
+      console.group("[WebHID Settings] Reading active parameters from mouse...");
 
       try {
         // Polling rate
@@ -1087,37 +1345,55 @@
           const pollRsp = await eng.read(0x01, 0x09, 0x02, 0x00);
           const POLL_VAL_TO_HZ = { 1: 125, 2: 250, 4: 500, 8: 1000 };
           appState.globals.polling_rate = POLL_VAL_TO_HZ[pollRsp[7]] || 1000;
-        } catch (_) {}
+          console.log(`[WebHID Settings] Polling Rate: ${appState.globals.polling_rate} Hz (raw code: ${pollRsp[7]})`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read polling rate:", e.message);
+        }
 
         // Debounce
         try {
           const debRsp = await eng.read(0x04, 0x03, 0x03, 0x00);
           appState.globals.debounce = debRsp[7];
-        } catch (_) {}
+          console.log(`[WebHID Settings] Debounce Time: ${appState.globals.debounce} ms`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read debounce:", e.message);
+        }
 
         // Motion Sync
         try {
           const msRsp = await eng.read(0x07, 0x05, 0x02, 0x00);
           appState.globals.motion_sync = !!msRsp[7];
-        } catch (_) {}
+          console.log(`[WebHID Settings] Motion Sync: ${appState.globals.motion_sync}`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read motion sync:", e.message);
+        }
 
         // Angle Snap
         try {
           const asRsp = await eng.read(0x07, 0x04, 0x02, 0x00);
           appState.globals.angle_snap = !!asRsp[7];
-        } catch (_) {}
+          console.log(`[WebHID Settings] Angle Snapping: ${appState.globals.angle_snap}`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read angle snap:", e.message);
+        }
 
         // Ripple Control
         try {
           const rcRsp = await eng.read(0x07, 0x03, 0x02, 0x00);
           appState.globals.ripple_control = !!rcRsp[7];
-        } catch (_) {}
+          console.log(`[WebHID Settings] Ripple Control: ${appState.globals.ripple_control}`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read ripple control:", e.message);
+        }
 
         // Auto Sleep
         try {
           const slpRsp = await eng.read(0x08, 0x05, 0x03, 0x00);
           appState.globals.power_saving = slpRsp[7] | (slpRsp[8] << 8);
-        } catch (_) {}
+          console.log(`[WebHID Settings] Power Saving Sleep: ${appState.globals.power_saving} s`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read power saving sleep:", e.message);
+        }
 
         // Battery
         try {
@@ -1127,7 +1403,10 @@
             battery_percent: batRsp[6],
             power_connected: !!chgRsp[6]
           };
-        } catch (_) {}
+          console.log(`[WebHID Settings] Battery: ${appState.battery.battery_percent}% (Charging: ${appState.battery.power_connected})`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read battery level:", e.message);
+        }
 
         // Active Profile
         try {
@@ -1135,7 +1414,10 @@
           const act = profRsp[6] || profRsp[7] || 1;
           appState.active_profile = act;
           appState.current_tab_profile = act;
-        } catch (_) {}
+          console.log(`[WebHID Settings] Active Profile: ${act}`);
+        } catch (e) {
+          console.warn("[WebHID Settings] Failed to read active profile:", e.message);
+        }
 
         // Read active profile details
         await readProfileSettings(appState.current_tab_profile);
@@ -1143,8 +1425,11 @@
         renderHeader();
         renderGlobals();
         renderProfileTab();
+        console.log("%c[WebHID Settings] Active settings loaded successfully.", "color: #10b981; font-weight: bold;");
       } catch (err) {
-        console.error("Read active settings error:", err);
+        console.error("[WebHID Settings] Error while reading mouse parameters:", err);
+      } finally {
+        console.groupEnd();
       }
     }
 
@@ -1152,6 +1437,7 @@
       const eng = appState.hidEngine;
       if (!eng) return;
       try {
+        console.log(`[WebHID Settings] Reading configuration for Profile ${p}...`);
         const dpiRsp = await eng.read(0x05, 0x04, 0x15, p);
         const activeStage = dpiRsp[7];
         const numStages = dpiRsp[8];
@@ -1163,6 +1449,7 @@
           stages.push([dx, dy]);
         }
         appState.profiles[p - 1].dpi = { active: activeStage, count: numStages, stages };
+        console.log(`[WebHID Settings] Profile ${p} DPI Stages:`, stages, `(Active Stage: ${activeStage})`);
 
         const colors = [];
         for (let s = 1; s <= numStages; s++) {
@@ -1195,7 +1482,10 @@
             lodVal = 1;
           }
           appState.profiles[p - 1].lod = lodVal;
-        } catch (_) {}
+          console.log(`[WebHID Settings] Profile ${p} Lift-Off Distance: ${lodVal} mm`);
+        } catch (e) {
+          console.warn(`[WebHID Settings] Failed to read Profile ${p} LOD:`, e.message);
+        }
 
         try {
           const ledRsp = await eng.read(0x03, 0x04, 0x0F, p, [0x01]);
@@ -1203,14 +1493,18 @@
           const LED_VAL_TO_NAME = { 0: 'off', 1: 'steady', 2: 'breathe' };
           appState.profiles[p - 1].led_effect = LED_VAL_TO_NAME[ledRsp[8]] || 'steady';
           appState.profiles[p - 1].brightness = brightRsp[8];
-        } catch (_) {}
+          console.log(`[WebHID Settings] Profile ${p} LED Effect: ${appState.profiles[p - 1].led_effect}, Brightness: ${appState.profiles[p - 1].brightness}`);
+        } catch (e) {
+          console.warn(`[WebHID Settings] Failed to read Profile ${p} LED settings:`, e.message);
+        }
       } catch (e) {
-        console.warn(`Profile ${p} read error:`, e);
+        console.warn(`[WebHID Settings] Profile ${p} read error:`, e.message || e);
       }
     }
 
     // Refresh from Device
     async function refreshData() {
+      console.log("[Refresh] Refreshing mouse settings...");
       if (appState.connectionMode === 'webhid' && appState.hidEngine) {
         showToast("Reading settings from mouse...");
         await readActiveSettings();
@@ -1224,10 +1518,12 @@
       }
 
       // Fallback: Local API
+      console.log(`[Local API] Checking local service at ${API_BASE}/api/status...`);
       try {
         const resp = await fetch(API_BASE + '/api/status');
         if (resp.ok) {
           const data = await resp.json();
+          console.log("[Local API] Successfully fetched status from local service:", data);
           appState.connectionMode = "api";
           appState.device = data.name || appState.device;
           appState.firmware = data.firmware || appState.firmware;
@@ -1247,17 +1543,36 @@
           renderProfileTab();
           showToast('Updated settings from mouse!');
           return;
+        } else {
+          console.warn(`[Local API] Service responded with HTTP ${resp.status}: ${resp.statusText}`);
         }
-      } catch (_) {}
+      } catch (err) {
+        console.info(`[Local API] Local service not reachable at ${API_BASE}/api/status (${err.message || err}).`);
+      }
 
       appState.connectionMode = "none";
       renderHeader();
+      console.warn("[Refresh] No connection active. Click 'Connect WebHID' to select and connect to your mouse.");
     }
 
-    // Modal Helpers
-    function showModal(title, msg) {
+    function showModal(title, msg, actionText = null, actionFn = null) {
       document.getElementById('modal-title').textContent = title;
-      document.getElementById('modal-desc').textContent = msg;
+      const descEl = document.getElementById('modal-desc');
+      if (typeof msg === 'string' && msg.includes('<')) {
+        descEl.innerHTML = msg;
+      } else {
+        descEl.textContent = msg;
+      }
+      const actBtn = document.getElementById('modal-action-btn');
+      if (actBtn) {
+        if (actionText) {
+          actBtn.textContent = actionText;
+          actBtn.onclick = () => { closeModal(); if (actionFn) actionFn(); };
+          actBtn.classList.remove('hidden');
+        } else {
+          actBtn.classList.add('hidden');
+        }
+      }
       document.getElementById('modal').classList.remove('hidden');
     }
     function closeModal() {
@@ -1282,15 +1597,25 @@
     // Device Hotplug Listeners
     if ('hid' in navigator) {
       navigator.hid.addEventListener('disconnect', (event) => {
+        const devName = event.device.productName || 'HID Device';
+        const vidHex = '0x' + (event.device.vendorId || 0).toString(16);
+        const pidHex = '0x' + (event.device.productId || 0).toString(16);
+        console.warn(`[WebHID Hotplug] Device disconnected: "${devName}" (VID: ${vidHex}, PID: ${pidHex})`);
         if (appState.hidEngine && appState.hidEngine.device === event.device) {
+          console.error("[WebHID Hotplug] Active connected mouse was disconnected.");
           appState.hidEngine = null;
           appState.connectionMode = 'none';
           renderHeader();
           showToast("Mouse disconnected", true);
         }
       });
-      navigator.hid.addEventListener('connect', async () => {
+      navigator.hid.addEventListener('connect', async (event) => {
+        const devName = event.device.productName || 'HID Device';
+        const vidHex = '0x' + (event.device.vendorId || 0).toString(16);
+        const pidHex = '0x' + (event.device.productId || 0).toString(16);
+        console.log(`[WebHID Hotplug] Device connected: "${devName}" (VID: ${vidHex}, PID: ${pidHex})`);
         if (!appState.hidEngine && !appState.isConnecting) {
+          console.log("[WebHID Hotplug] Attempting auto-connection to newly attached device...");
           await autoConnectWebHID();
         }
       });
@@ -1309,15 +1634,29 @@
     });
 
     // Initialize UI and attempt Auto-Connect
+    console.group("[Pulsar Mouse Web Manager] Initializing...");
+    console.log("Environment Information:", {
+      hasWebHID: 'hid' in navigator,
+      isSecureContext: window.isSecureContext,
+      origin: window.location.origin,
+      protocol: window.location.protocol,
+      apiBase: API_BASE || '(same-origin)',
+      userAgent: navigator.userAgent
+    });
+    console.groupEnd();
+
     renderHeader();
     renderGlobals();
     renderProfileTab();
     autoConnectWebHID().then(connected => {
       if (!connected) {
-        // Fallback check: only try API if WebHID is not connected
+        console.log("[Init] WebHID not auto-connected. Checking Local API fallback...");
         fetch(API_BASE + '/api/status').then(r => {
           if (r.ok) refreshData();
-        }).catch(() => {});
+          else console.log("[Init] Local API returned HTTP " + r.status);
+        }).catch(err => {
+          console.log("[Init] Local API not reachable (" + err.message + "). Ready for WebHID connection.");
+        });
       }
     });
   </script>
