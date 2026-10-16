@@ -241,7 +241,7 @@
       </div>
     </div>
 
-    <!-- Nav Items (Ordered: Info, DPI, Buttons, Performance, Macro) -->
+    <!-- Nav Items (Ordered: Info, DPI, Buttons, Performance) -->
     <nav style="flex: 1; padding: 0 4px;">
       <div class="nav-item active" data-tab="info" onclick="switchTab('info')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
@@ -258,10 +258,6 @@
       <div class="nav-item" data-tab="performance" onclick="switchTab('performance')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
         <span>Performance Setting</span>
-      </div>
-      <div class="nav-item" data-tab="macro" onclick="switchTab('macro')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-        <span>Macro Manager</span>
       </div>
     </nav>
 
@@ -482,7 +478,7 @@
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
               <div style="font-size: 16px; font-weight: 700;">Button Assignment</div>
-              <div style="font-size: 12px; color: var(--text-secondary);">Remap mouse buttons to custom mouse actions, keyboard shortcuts, or recorded macros.</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Remap mouse buttons to custom mouse actions, keyboard keys, and system shortcuts.</div>
             </div>
             <div style="display: flex; gap: 8px;">
               <button onclick="swapSideButtons()" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" title="Swap Side Button 4 (Back) and Side Button 5 (Front)">
@@ -611,189 +607,7 @@
         </div>
       </div>
 
-      <!-- ═══ TAB 5: MACRO ═══════════════════════════════════════════ -->
-      <div id="tab-macro" class="tab-content" style="display: none;">
-        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 16px;">
 
-          <!-- Macro List Sidebar -->
-          <div class="settings-card" style="display: flex; flex-direction: column;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <div>
-                <div style="font-size: 15px; font-weight: 700;">Macro Library</div>
-                <div style="font-size: 11px; color: var(--text-secondary);">Saved sequences & bindings</div>
-              </div>
-              <button onclick="createNewMacro()" class="btn-primary" style="font-size: 12px; padding: 5px 12px;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
-                New Macro
-              </button>
-            </div>
-
-            <!-- Macro items container -->
-            <div id="macro-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto;">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-
-          <!-- Macro Editor Area -->
-          <div class="settings-card" id="macro-editor-card">
-            <div id="macro-editor-empty" style="padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; opacity: 0.5;">
-                <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
-              </svg>
-              Select a macro from the library, or click <strong>New Macro</strong> to start recording.
-            </div>
-
-            <div id="macro-editor-active" style="display: none;">
-              <!-- Header with Name, Test Run & Quick Assign -->
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
-                  <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); display: block; margin-bottom: 4px;">Macro Name</label>
-                  <input type="text" id="macro-name-input" placeholder="Macro Name" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; outline: none;" oninput="updateMacroName(this.value)">
-                </div>
-                <div style="display: flex; align-items: flex-end; gap: 8px;">
-                  <button onclick="testPlaybackMacro()" class="btn-secondary" style="font-size: 12px; padding: 7px 12px;" title="Test Macro Playback in Browser">
-                    ▶ Test Run
-                  </button>
-                  <div>
-                    <label style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); display: block; margin-bottom: 4px;">Assign to Button</label>
-                    <select id="macro-assign-btn-select" onchange="quickAssignMacro(this.value)" class="select-styled" style="font-size: 12px; padding: 7px 10px;">
-                      <option value="">Choose Button...</option>
-                      <option value="thumb1">Side Button 4 (Back)</option>
-                      <option value="thumb2">Side Button 5 (Front)</option>
-                      <option value="wheel">Wheel Click</option>
-                      <option value="dpi">DPI Button</option>
-                      <option value="left">Left Click</option>
-                      <option value="right">Right Click</option>
-                    </select>
-                  </div>
-                  <button onclick="duplicateActiveMacro()" class="btn-secondary" style="font-size: 12px; padding: 7px 12px;" title="Duplicate Macro">
-                    Duplicate
-                  </button>
-                </div>
-              </div>
-
-              <!-- Hardware Trigger Output Configuration -->
-              <div style="margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-                  <div>
-                    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text);">Hardware Trigger Output</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">The native command programmed into the mouse microcontroller onboard memory</div>
-                  </div>
-                  <span id="macro-hw-badge" style="font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 6px; background: var(--primary-glow); color: var(--primary); border: 1px solid rgba(59,130,246,0.3);">
-                    Auto: Double Click
-                  </span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <select id="macro-hw-override-select" onchange="updateMacroHardwareOverride(this.value)" class="select-styled" style="font-size: 12px; flex: 1;">
-                    <option value="auto">Auto-detect from sequence</option>
-                    <option value="xclick">Double Click / Rapid Fire</option>
-                    <option value="key_c_copy">Ctrl+C (Copy)</option>
-                    <option value="key_v_paste">Ctrl+V (Paste)</option>
-                    <option value="key_z_undo">Ctrl+Z (Undo)</option>
-                    <option value="key_space">Spacebar</option>
-                    <option value="key_enter">Enter Key</option>
-                    <option value="key_e">Key E</option>
-                    <option value="key_f">Key F</option>
-                    <option value="key_v">Key V</option>
-                    <option value="key_1">Key 1</option>
-                    <option value="key_2">Key 2</option>
-                    <option value="mouse_left">Left Click</option>
-                    <option value="mouse_right">Right Click</option>
-                    <option value="mouse_middle">Middle Click</option>
-                    <option value="mouse_back">Backward (Mouse 4)</option>
-                    <option value="mouse_forward">Forward (Mouse 5)</option>
-                  </select>
-                  <button onclick="applyHardwareBindingNow()" class="btn-accent" style="font-size: 11px; padding: 6px 12px;">
-                    Program to Mouse
-                  </button>
-                </div>
-              </div>
-
-              <!-- Playback Mode -->
-              <div style="margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">Trigger Mode</span>
-                  <span id="macro-mode-desc" style="font-size: 11px; color: var(--text-muted);">Execute once per button press</span>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                  <button class="pill-btn macro-mode-btn active" data-mode="once" onclick="setMacroMode('once')">Run Once</button>
-                  <button class="pill-btn macro-mode-btn" data-mode="hold" onclick="setMacroMode('hold')">Repeat While Held</button>
-                  <button class="pill-btn macro-mode-btn" data-mode="toggle" onclick="setMacroMode('toggle')">Toggle Loop</button>
-                </div>
-              </div>
-
-              <!-- Recording Control Bar -->
-              <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                <button id="record-btn" onclick="toggleMacroRecording()" class="btn-primary" style="flex: 2; min-width: 160px; justify-content: center; padding: 9px 16px;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
-                  <span>Start Live Recording</span>
-                </button>
-                <button onclick="clearMacroSteps()" class="btn-secondary" style="flex: 1; min-width: 100px; justify-content: center;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                  Clear Steps
-                </button>
-              </div>
-
-              <!-- Live Recording Banner -->
-              <div id="recording-active-banner" style="display: none; padding: 12px 16px; border-radius: 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;" class="rec-blink"></div>
-                    <span style="font-size: 12px; font-weight: 700; color: #ef4444;">Recording active... Press keyboard keys or click the capture box below.</span>
-                  </div>
-                  <span style="font-size: 11px; color: var(--text-muted);">Press <kbd style="padding: 2px 6px; border-radius: 4px; background: var(--card); border: 1px solid var(--border);">ESC</kbd> to Stop</span>
-                </div>
-              </div>
-
-              <!-- Mouse Button Recording Capture Area -->
-              <div id="mouse-capture-box" class="mouse-rec-box" style="margin-bottom: 14px;" onmousedown="handleMouseCapture(event)" oncontextmenu="event.preventDefault()">
-                <div style="font-size: 12px; font-weight: 600; color: var(--text);">
-                  🖱️ Click inside here to record Mouse Clicks
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                  Left Click • Middle Click • Right Click • Side Button 4 (Back) • Side Button 5 (Front)
-                </div>
-              </div>
-
-              <!-- Manual Step Insertion Controls -->
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; padding: 10px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--border);">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Manual Add:</span>
-                <button onclick="promptAddKey()" class="btn-secondary" style="font-size: 11px; padding: 4px 10px;">+ Key</button>
-                <div style="display: flex; align-items: center; gap: 4px;">
-                  <select id="quick-mouse-step-select" class="select-styled" style="font-size: 11px; padding: 4px 8px;">
-                    <option value="left">Left Click</option>
-                    <option value="right">Right Click</option>
-                    <option value="middle">Middle Click</option>
-                    <option value="thumb1">Side Button 4 (Back)</option>
-                    <option value="thumb2">Side Button 5 (Front)</option>
-                  </select>
-                  <button onclick="addManualMouseClick()" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;">+ Mouse</button>
-                </div>
-                <div style="display: flex; align-items: center; gap: 4px; margin-left: auto;">
-                  <input type="number" id="delay-input" placeholder="50" min="1" max="10000" value="50" style="width: 55px; padding: 4px 6px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 11px; text-align: center; outline: none;">
-                  <span style="font-size: 10px; color: var(--text-muted);">ms</span>
-                  <button onclick="addMacroDelay()" class="btn-secondary" style="font-size: 11px; padding: 4px 8px;">+ Delay</button>
-                </div>
-              </div>
-
-              <!-- Recorded Steps Timeline -->
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">
-                    Step Sequence
-                    <span id="macro-step-count" style="color: var(--primary);">(0 steps)</span>
-                  </span>
-                  <span id="macro-duration-estimate" style="font-size: 11px; color: var(--text-muted);">Duration: 0 ms</span>
-                </div>
-                <div id="macro-steps-list" style="min-height: 120px; max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--input-bg);">
-                  <!-- Steps rendered dynamically -->
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div><!-- /main content padding -->
   </div><!-- /main-content -->
@@ -829,11 +643,11 @@
        BUTTON REMAP MODAL
        ═══════════════════════════════════════════════════════════════════ -->
   <div id="remap-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 200;">
-    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 16px 48px rgba(0,0,0,0.4);">
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 620px; width: 100%; padding: 24px; box-shadow: 0 16px 48px rgba(0,0,0,0.4);">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
         <div>
           <h3 id="remap-title" style="font-size: 16px; font-weight: 700; margin: 0 0 4px;">Remap Button</h3>
-          <div style="font-size: 12px; color: var(--text-secondary);">Select the action, shortcut, or macro to trigger.</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">Select the mouse action, keyboard key, or shortcut to trigger.</div>
         </div>
         <button onclick="closeRemapModal()" class="btn-secondary" style="padding: 4px 8px;">✕</button>
       </div>
@@ -846,12 +660,11 @@
         <button class="pill-btn remap-cat-btn" data-cat="media" onclick="showRemapCategory('media')">Media</button>
         <button class="pill-btn remap-cat-btn" data-cat="scroll" onclick="showRemapCategory('scroll')">Scroll</button>
         <button class="pill-btn remap-cat-btn" data-cat="profile" onclick="showRemapCategory('profile')">Profile</button>
-        <button class="pill-btn remap-cat-btn" data-cat="macro" onclick="showRemapCategory('macro')">Macro</button>
         <button class="pill-btn remap-cat-btn" data-cat="special" onclick="showRemapCategory('special')">Special</button>
       </div>
 
       <!-- Category Options Content -->
-      <div id="remap-content" style="min-height: 140px; max-height: 280px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;"></div>
+      <div id="remap-content" style="min-height: 200px; max-height: 420px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;"></div>
 
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button onclick="closeRemapModal()" class="btn-secondary">Cancel</button>
@@ -950,8 +763,8 @@
       'left': 0x01,
       'right': 0x02,
       'wheel': 0x03,
-      'forward': 0x04,  // Mouse 5 (Front)
-      'backward': 0x05  // Mouse 4 (Back)
+      'backward': 0x04,  // Mouse 4 (Back)
+      'forward': 0x05   // Mouse 5 (Front)
     };
 
     // Hardware Button IDs on Pulsar Xlite / X2:
@@ -959,8 +772,8 @@
       left: 0x01,
       right: 0x02,
       wheel: 0x03,
-      thumb1: 0x04, // Side Button 4 (Back)
-      thumb2: 0x05, // Side Button 5 (Front)
+      thumb1: 0x04, // Side Button 4 (Back) -> MCU Register 0x04
+      thumb2: 0x05, // Side Button 5 (Front) -> MCU Register 0x05
       dpi: 0x0b
     };
 
@@ -998,138 +811,118 @@
     });
     const HID_KEY_NAMES = {}; for (const [k,v] of Object.entries(HID_KEYS)) { if (!HID_KEY_NAMES[v]) HID_KEY_NAMES[v] = k; }
 
-    function parseStepToHIDKey(keyStr) {
-      if (!keyStr) return null;
-      const s = keyStr.toLowerCase().trim();
-      if (HID_KEYS[s]) return HID_KEYS[s];
-      const aliases = {
-        'control': null, 'shift': null, 'alt': null, 'meta': null,
-        'ctrl': null, 'cmd': null, 'windows': null,
-        'esc': 0x29, 'escape': 0x29,
-        'return': 0x28, 'enter': 0x28,
-        'space': 0x2c, ' ': 0x2c, 'spacebar': 0x2c,
-        'backspace': 0x2a, 'tab': 0x2b, 'capslock': 0x39,
-        'delete': 0x4c, 'del': 0x4c, 'insert': 0x49, 'ins': 0x49,
-        'home': 0x4a, 'end': 0x4d, 'pageup': 0x4b, 'pagedown': 0x4e,
-        'arrowright': 0x4f, 'right': 0x4f,
-        'arrowleft': 0x50, 'left': 0x50,
-        'arrowdown': 0x51, 'down': 0x51,
-        'arrowup': 0x52, 'up': 0x52,
-      };
-      if (aliases[s] !== undefined) return aliases[s];
-      if (s.length === 1 && s >= 'a' && s <= 'z') return 0x04 + (s.charCodeAt(0) - 97);
-      if (s.length === 1 && s >= '1' && s <= '9') return 0x1e + (s.charCodeAt(0) - 49);
-      if (s === '0') return 0x27;
-      return null;
-    }
-
-    function getStepModifier(keyStr) {
-      if (!keyStr) return 0;
-      const s = keyStr.toLowerCase().trim();
-      if (s.includes('ctrl') || s.includes('control')) return 0x01;
-      if (s.includes('shift')) return 0x02;
-      if (s.includes('alt')) return 0x04;
-      if (s.includes('meta') || s.includes('win') || s.includes('super') || s.includes('gui')) return 0x08;
-      return 0;
-    }
-
-    // ── Smart Macro to Hardware Action Resolver ─────────────────────────
-    function resolveMacroHardwareAction(macro) {
-      if (!macro) return { type: BTN_TYPE_MOUSE, a1: 0x01, a2: 0x00, label: 'Left Click' };
-
-      // User explicit override
-      if (macro.hwType && macro.hwType !== 'auto') {
-        const t = macro.hwType;
-        if (t === 'xclick') return { type: BTN_TYPE_XCLICK, a1: 0x01, a2: 0x00, label: 'Double Click' };
-        if (t === 'mouse_left') return { type: BTN_TYPE_MOUSE, a1: 0x01, a2: 0, label: 'Left Click' };
-        if (t === 'mouse_right') return { type: BTN_TYPE_MOUSE, a1: 0x02, a2: 0, label: 'Right Click' };
-        if (t === 'mouse_middle') return { type: BTN_TYPE_MOUSE, a1: 0x03, a2: 0, label: 'Middle Click' };
-        if (t === 'mouse_back') return { type: BTN_TYPE_MOUSE, a1: 0x05, a2: 0, label: 'Backward (Mouse 4)' };
-        if (t === 'mouse_forward') return { type: BTN_TYPE_MOUSE, a1: 0x04, a2: 0, label: 'Forward (Mouse 5)' };
-        if (t === 'key_c_copy') return { type: BTN_TYPE_KEYBOARD, a1: 0x01, a2: HID_KEYS.c, label: 'Ctrl+C (Copy)' };
-        if (t === 'key_v_paste') return { type: BTN_TYPE_KEYBOARD, a1: 0x01, a2: HID_KEYS.v, label: 'Ctrl+V (Paste)' };
-        if (t === 'key_z_undo') return { type: BTN_TYPE_KEYBOARD, a1: 0x01, a2: HID_KEYS.z, label: 'Ctrl+Z (Undo)' };
-        if (t === 'key_space') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS.space, label: 'Spacebar' };
-        if (t === 'key_enter') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS.enter, label: 'Enter' };
-        if (t === 'key_e') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS.e, label: 'Key E' };
-        if (t === 'key_f') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS.f, label: 'Key F' };
-        if (t === 'key_v') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS.v, label: 'Key V' };
-        if (t === 'key_1') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS['1'], label: 'Key 1' };
-        if (t === 'key_2') return { type: BTN_TYPE_KEYBOARD, a1: 0, a2: HID_KEYS['2'], label: 'Key 2' };
-      }
-
-      // Auto-detection:
-      // 1. Rapid fire / Double click: 2+ left mousedowns
-      const leftClicks = macro.steps.filter(s => s.type === 'mousedown' && (s.button?.includes('Left') || s.buttonNum === 1));
-      if (leftClicks.length >= 2 || macro.name.toLowerCase().includes('rapid') || macro.name.toLowerCase().includes('double')) {
-        return { type: BTN_TYPE_XCLICK, a1: 0x01, a2: 0x00, label: 'Double Click (Rapid Fire)' };
-      }
-
-      // 2. Keyboard shortcut / key:
+    function parseDOMKeyEvent(e) {
       let mod = 0;
+      if (e.ctrlKey) mod |= 0x01;
+      if (e.shiftKey) mod |= 0x02;
+      if (e.altKey) mod |= 0x04;
+      if (e.metaKey) mod |= 0x08;
+
       let keycode = 0;
       let keyName = '';
 
-      for (const step of macro.steps) {
-        if (step.type === 'keydown') {
-          const m = getStepModifier(step.key);
-          if (m) {
-            mod |= m;
-          } else {
-            const k = parseStepToHIDKey(step.key);
-            if (k && !keycode) {
-              keycode = k;
-              keyName = step.key.toUpperCase();
-            }
-          }
+      const code = e.code || '';
+      if (code.startsWith('Key') && code.length === 4) {
+        const char = code[3].toLowerCase();
+        keycode = 0x04 + (char.charCodeAt(0) - 97);
+        keyName = code[3].toUpperCase();
+      } else if (code.startsWith('Digit') && code.length === 6) {
+        const num = parseInt(code[5]);
+        keycode = num === 0 ? 0x27 : (0x1e + (num - 1));
+        keyName = String(num);
+      } else if (code.startsWith('Numpad') && /^Numpad[0-9]$/.test(code)) {
+        const num = parseInt(code[6]);
+        keycode = num === 0 ? 0x62 : (0x59 + (num - 1));
+        keyName = 'Num ' + num;
+      } else if (code.startsWith('F') && /^F([1-9]|1[0-2])$/.test(code)) {
+        const num = parseInt(code.substring(1));
+        keycode = 0x3a + (num - 1);
+        keyName = 'F' + num;
+      } else {
+        const codeMap = {
+          'Space': [0x2c, 'Space'],
+          'Enter': [0x28, 'Enter'],
+          'NumpadEnter': [0x58, 'Num Enter'],
+          'Escape': [0x29, 'Esc'],
+          'Backspace': [0x2a, 'Backspace'],
+          'Tab': [0x2b, 'Tab'],
+          'Minus': [0x2d, '-'],
+          'Equal': [0x2e, '='],
+          'BracketLeft': [0x2f, '['],
+          'BracketRight': [0x30, ']'],
+          'Backslash': [0x31, '\\'],
+          'Semicolon': [0x33, ';'],
+          'Quote': [0x34, "'"],
+          'Backquote': [0x35, '`'],
+          'Comma': [0x36, ','],
+          'Period': [0x37, '.'],
+          'Slash': [0x38, '/'],
+          'CapsLock': [0x39, 'Caps Lock'],
+          'Insert': [0x49, 'Insert'],
+          'Home': [0x4a, 'Home'],
+          'PageUp': [0x4b, 'Page Up'],
+          'Delete': [0x4c, 'Delete'],
+          'End': [0x4d, 'End'],
+          'PageDown': [0x4e, 'Page Down'],
+          'ArrowRight': [0x4f, '→ Right'],
+          'ArrowLeft': [0x50, '← Left'],
+          'ArrowDown': [0x51, '↓ Down'],
+          'ArrowUp': [0x52, '↑ Up'],
+          'NumpadAdd': [0x57, 'Num +'],
+          'NumpadSubtract': [0x56, 'Num -'],
+          'NumpadMultiply': [0x55, 'Num *'],
+          'NumpadDivide': [0x54, 'Num /'],
+          'NumpadDecimal': [0x63, 'Num .'],
+        };
+        if (codeMap[code]) {
+          keycode = codeMap[code][0];
+          keyName = codeMap[code][1];
         }
       }
 
-      if (keycode || mod) {
-        const modParts = [];
-        if (mod & 0x01) modParts.push('Ctrl');
-        if (mod & 0x02) modParts.push('Shift');
-        if (mod & 0x04) modParts.push('Alt');
-        if (mod & 0x08) modParts.push('Win');
-        let label = '';
-        if (modParts.length && keyName) label = modParts.join('+') + '+' + keyName;
-        else if (keyName) label = keyName;
-        else if (modParts.length) label = modParts.join('+');
-        else label = 'Key';
-        return { type: BTN_TYPE_KEYBOARD, a1: mod, a2: keycode, label: label };
+      // Fallback from e.key
+      if (!keycode && e.key) {
+        const k = e.key.toLowerCase();
+        if (k.length === 1 && k >= 'a' && k <= 'z') {
+          keycode = 0x04 + (k.charCodeAt(0) - 97);
+          keyName = k.toUpperCase();
+        } else if (k.length === 1 && k >= '1' && k <= '9') {
+          keycode = 0x1e + (k.charCodeAt(0) - 49);
+          keyName = k;
+        } else if (k === '0') {
+          keycode = 0x27;
+          keyName = '0';
+        } else if (HID_KEYS[k]) {
+          keycode = HID_KEYS[k];
+          keyName = k.toUpperCase();
+        }
       }
 
-      // 3. Single mouse clicks:
-      const firstMouse = macro.steps.find(s => s.type === 'mousedown');
-      if (firstMouse) {
-        const btn = firstMouse.button || '';
-        if (btn.includes('Right') || firstMouse.buttonNum === 2) return { type: BTN_TYPE_MOUSE, a1: 0x02, a2: 0, label: 'Right Click' };
-        if (btn.includes('Middle') || firstMouse.buttonNum === 3) return { type: BTN_TYPE_MOUSE, a1: 0x03, a2: 0, label: 'Middle Click' };
-        if (btn.includes('Side Button 4') || btn.includes('Back') || firstMouse.buttonNum === 4) return { type: BTN_TYPE_MOUSE, a1: 0x05, a2: 0, label: 'Backward (Mouse 4)' };
-        if (btn.includes('Side Button 5') || btn.includes('Front') || firstMouse.buttonNum === 5) return { type: BTN_TYPE_MOUSE, a1: 0x04, a2: 0, label: 'Forward (Mouse 5)' };
-        return { type: BTN_TYPE_MOUSE, a1: 0x01, a2: 0, label: 'Left Click' };
-      }
+      const isOnlyModifier = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key);
 
-      // Fallback: Double Click
-      return { type: BTN_TYPE_XCLICK, a1: 0x01, a2: 0x00, label: 'Double Click' };
+      const modParts = [];
+      if (mod & 0x01) modParts.push('Ctrl');
+      if (mod & 0x02) modParts.push('Shift');
+      if (mod & 0x04) modParts.push('Alt');
+      if (mod & 0x08) modParts.push('Win');
+
+      let label = '';
+      if (modParts.length && keyName) label = modParts.join('+') + '+' + keyName;
+      else if (keyName) label = keyName;
+      else if (modParts.length) label = modParts.join('+');
+      else label = isOnlyModifier ? e.key : 'Unknown';
+
+      return { mod, keycode, keyName, label, isOnlyModifier };
     }
 
     function describeButton(t, a1, a2) {
       if (t === BTN_TYPE_DISABLED) return 'Disabled';
-      if (t === BTN_TYPE_MACRO) {
-        const macro = appState.macros.find(m => m.id === a1 || m.name === a1);
-        if (macro) {
-          const hw = resolveMacroHardwareAction(macro);
-          return `Macro: ${macro.name} (${hw.label})`;
-        }
-        return `Macro #${a1}`;
-      }
       if (t === BTN_TYPE_MOUSE) {
         if (a1 === 0x01) return 'Left Click';
         if (a1 === 0x02) return 'Right Click';
         if (a1 === 0x03) return 'Wheel Click';
-        if (a1 === 0x04) return 'Forward (Mouse 5)';
-        if (a1 === 0x05) return 'Backward (Mouse 4)';
+        if (a1 === 0x04) return 'Backward (Mouse 4)';
+        if (a1 === 0x05) return 'Forward (Mouse 5)';
         return `Mouse(0x${a1.toString(16)})`;
       }
       if (t === BTN_TYPE_KEYBOARD) {
@@ -1138,8 +931,11 @@
         if (a1 & 0x02) mods.push('Shift');
         if (a1 & 0x04) mods.push('Alt');
         if (a1 & 0x08) mods.push('Win');
-        const key = HID_KEY_NAMES[a2] ? HID_KEY_NAMES[a2].toUpperCase() : `0x${a2.toString(16)}`;
-        return mods.length ? mods.join('+') + '+' + key : key;
+        const key = HID_KEY_NAMES[a2] ? HID_KEY_NAMES[a2].toUpperCase() : (a2 ? `0x${a2.toString(16)}` : '');
+        if (mods.length && key) return mods.join('+') + '+' + key;
+        if (key) return key;
+        if (mods.length) return mods.join('+');
+        return 'Keyboard';
       }
       if (t === BTN_TYPE_SCROLL) return a1 === 0x01 ? 'Scroll Up' : 'Scroll Down';
       if (t === BTN_TYPE_PROFILE) return a1 === 0x03 ? 'Profile +' : 'Profile −';
@@ -1150,6 +946,7 @@
         return `Media(0x${code.toString(16)})`;
       }
       if (t === BTN_TYPE_XCLICK) return 'Double Click (xclick)';
+      if (t === BTN_TYPE_MACRO) return 'Legacy Macro';
       return `Custom(0x${t.toString(16)})`;
     }
 
@@ -1188,90 +985,16 @@
           left:   [BTN_TYPE_MOUSE, 0x01, 0],
           right:  [BTN_TYPE_MOUSE, 0x02, 0],
           wheel:  [BTN_TYPE_MOUSE, 0x03, 0],
-          thumb1: [BTN_TYPE_MOUSE, 0x05, 0], // Side Button 4 (Back) -> Backward (0x05)
-          thumb2: [BTN_TYPE_MOUSE, 0x04, 0], // Side Button 5 (Front) -> Forward (0x04)
+          thumb1: [BTN_TYPE_MOUSE, 0x04, 0], // Side Button 4 (Back) -> Backward (0x04)
+          thumb2: [BTN_TYPE_MOUSE, 0x05, 0], // Side Button 5 (Front) -> Forward (0x05)
           dpi:    [BTN_TYPE_DPI,   0x03, 0]
         }
       })),
-      macros: [],
-      activeMacroIdx: -1,
-      isRecording: false,
-      recordingStartTime: 0,
-      recordingLastTime: 0,
       remapTarget: null
     };
 
     const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:8080';
     const SUPPORTED_VIDS = [0x3710, 0x25a7, 0x3554];
-
-    // ── Macro Storage & Presets ─────────────────────────────────────────
-    function loadSavedMacros() {
-      try {
-        const raw = localStorage.getItem('openpulsar_macros');
-        if (raw) {
-          appState.macros = JSON.parse(raw);
-          if (appState.macros.length > 0) appState.activeMacroIdx = 0;
-          return;
-        }
-      } catch (e) { console.warn("Failed to load macros from localStorage", e); }
-
-      appState.macros = [
-        {
-          id: 'macro_rapid_fire',
-          name: 'Rapid Fire (Double Click)',
-          mode: 'once',
-          hwType: 'xclick',
-          steps: [
-            { type: 'mousedown', button: 'Left Click', buttonNum: 1 },
-            { type: 'delay', ms: 30 },
-            { type: 'mouseup', button: 'Left Click', buttonNum: 1 },
-            { type: 'delay', ms: 40 },
-            { type: 'mousedown', button: 'Left Click', buttonNum: 1 },
-            { type: 'delay', ms: 30 },
-            { type: 'mouseup', button: 'Left Click', buttonNum: 1 }
-          ]
-        },
-        {
-          id: 'macro_copy_paste',
-          name: 'Copy Shortcut (Ctrl+C)',
-          mode: 'once',
-          hwType: 'key_c_copy',
-          steps: [
-            { type: 'keydown', key: 'Control', code: 'ControlLeft' },
-            { type: 'delay', ms: 25 },
-            { type: 'keydown', key: 'c', code: 'KeyC' },
-            { type: 'delay', ms: 30 },
-            { type: 'keyup', key: 'c', code: 'KeyC' },
-            { type: 'delay', ms: 25 },
-            { type: 'keyup', key: 'Control', code: 'ControlLeft' }
-          ]
-        }
-      ];
-      appState.activeMacroIdx = 0;
-      saveMacrosToStorage();
-    }
-
-    function saveMacrosToStorage() {
-      try {
-        localStorage.setItem('openpulsar_macros', JSON.stringify(appState.macros));
-      } catch (e) { console.error("Failed to save macros", e); }
-    }
-
-    function saveButtonMacroBinding(profileNum, btnKey, macroId) {
-      try {
-        const bindings = JSON.parse(localStorage.getItem('openpulsar_btn_macros') || '{}');
-        bindings[`p${profileNum}_${btnKey}`] = macroId;
-        localStorage.setItem('openpulsar_btn_macros', JSON.stringify(bindings));
-      } catch (e) {}
-    }
-
-    function removeButtonMacroBinding(profileNum, btnKey) {
-      try {
-        const bindings = JSON.parse(localStorage.getItem('openpulsar_btn_macros') || '{}');
-        delete bindings[`p${profileNum}_${btnKey}`];
-        localStorage.setItem('openpulsar_btn_macros', JSON.stringify(bindings));
-      } catch (e) {}
-    }
 
     // ── Theme Management ────────────────────────────────────────────────
     function toggleTheme() {
@@ -1292,8 +1015,6 @@
 
     // ── Tab Switching ───────────────────────────────────────────────────
     function switchTab(tab) {
-      if (appState.isRecording) toggleMacroRecording();
-
       appState.currentTab = tab;
       document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.toggle('active', n.dataset.tab === tab);
@@ -1302,10 +1023,7 @@
       const el = document.getElementById('tab-' + tab);
       if (el) el.style.display = '';
 
-      if (tab === 'macro') {
-        renderMacroList();
-        renderMacroEditor();
-      } else if (tab === 'buttons') {
+      if (tab === 'buttons') {
         renderButtonAssignment();
       } else if (tab === 'dpi') {
         renderProfileContent();
@@ -1390,8 +1108,6 @@
       renderProfileContent();
       renderInfoTab();
       renderButtonAssignment();
-      renderMacroList();
-      renderMacroEditor();
     }
 
     function renderHeader() {
@@ -1537,12 +1253,11 @@
       for (const [name, binding] of Object.entries(prof.buttons)) {
         const label = BUTTON_LABELS[name] || name;
         const desc = Array.isArray(binding) ? describeButton(binding[0], binding[1], binding[2]) : binding;
-        const isMacro = Array.isArray(binding) && binding[0] === BTN_TYPE_MACRO;
         const item = document.createElement('div');
         item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--border); font-size: 12px;';
         item.innerHTML = `
           <span style="color: var(--text-secondary); font-weight: 500;">${label}</span>
-          <span style="font-weight: 600; color: ${isMacro ? 'var(--accent)' : 'var(--primary)'}; font-size: 11px;">${desc}</span>
+          <span style="font-weight: 600; color: var(--primary); font-size: 11px;">${desc}</span>
         `;
         btnContainer.appendChild(item);
       }
@@ -1557,7 +1272,6 @@
       for (const [name, binding] of Object.entries(prof.buttons)) {
         const label = BUTTON_LABELS[name] || name;
         const desc = Array.isArray(binding) ? describeButton(binding[0], binding[1], binding[2]) : binding;
-        const isMacro = Array.isArray(binding) && binding[0] === BTN_TYPE_MACRO;
         const row = document.createElement('div');
         row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; background: var(--input-bg); border: 1px solid var(--border); transition: border-color var(--transition);';
         row.onmouseover = () => row.style.borderColor = 'var(--border-hover)';
@@ -1569,8 +1283,7 @@
             </div>
             <div>
               <div style="font-size: 13px; font-weight: 600;">${label}</div>
-              <div style="font-size: 12px; color: ${isMacro ? 'var(--accent)' : 'var(--primary)'}; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                ${isMacro ? '<span style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: var(--accent);">MACRO</span>' : ''}
+              <div style="font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                 <span>${desc}</span>
               </div>
             </div>
@@ -1607,12 +1320,11 @@
         left:   [BTN_TYPE_MOUSE, 0x01, 0],
         right:  [BTN_TYPE_MOUSE, 0x02, 0],
         wheel:  [BTN_TYPE_MOUSE, 0x03, 0],
-        thumb1: [BTN_TYPE_MOUSE, 0x05, 0], // Side Button 4 (Back) -> Backward (0x05)
-        thumb2: [BTN_TYPE_MOUSE, 0x04, 0], // Side Button 5 (Front) -> Forward (0x04)
+        thumb1: [BTN_TYPE_MOUSE, 0x04, 0], // Side Button 4 (Back) -> Backward (0x04)
+        thumb2: [BTN_TYPE_MOUSE, 0x05, 0], // Side Button 5 (Front) -> Forward (0x05)
         dpi:    [BTN_TYPE_DPI,   0x03, 0]
       };
       for (const [name, b] of Object.entries(appState.profiles[pIdx].buttons)) {
-        removeButtonMacroBinding(appState.current_tab_profile, name);
         await transmitButtonBinding(appState.current_tab_profile, name, b);
       }
       renderButtonAssignment();
@@ -1620,7 +1332,10 @@
       showToast("Button assignments reset to defaults");
     }
 
-    // ── Button Remap Modal ──────────────────────────────────────────────
+    // ── Button Remap Modal & State ──────────────────────────────────────
+    let activeKeyCapturerListener = null;
+    let selectedKeyboardModifiers = { ctrl: false, shift: false, alt: false, win: false };
+
     function openRemapModal(buttonName) {
       appState.remapTarget = { buttonName };
       document.getElementById('remap-title').textContent = 'Remap: ' + (BUTTON_LABELS[buttonName] || buttonName);
@@ -1629,19 +1344,37 @@
     }
 
     function closeRemapModal() {
+      if (activeKeyCapturerListener) {
+        window.removeEventListener('keydown', activeKeyCapturerListener, true);
+        activeKeyCapturerListener = null;
+      }
       document.getElementById('remap-modal').style.display = 'none';
       appState.remapTarget = null;
     }
 
+    function getSelectedModifierMask() {
+      let mask = 0;
+      if (selectedKeyboardModifiers.ctrl) mask |= 0x01;
+      if (selectedKeyboardModifiers.shift) mask |= 0x02;
+      if (selectedKeyboardModifiers.alt) mask |= 0x04;
+      if (selectedKeyboardModifiers.win) mask |= 0x08;
+      return mask;
+    }
+
     function showRemapCategory(cat) {
+      if (activeKeyCapturerListener) {
+        window.removeEventListener('keydown', activeKeyCapturerListener, true);
+        activeKeyCapturerListener = null;
+      }
+
       document.querySelectorAll('.remap-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
       const content = document.getElementById('remap-content');
       content.innerHTML = '';
 
-      const makeBtn = (label, desc, onclick) => {
+      const makeBtn = (label, desc, onclick, extraStyle = '') => {
         const b = document.createElement('button');
         b.className = 'btn-secondary';
-        b.style.cssText = 'width: 100%; text-align: left; font-size: 12px; padding: 9px 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;';
+        b.style.cssText = 'width: 100%; text-align: left; font-size: 12px; padding: 9px 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;' + extraStyle;
         b.innerHTML = `
           <span style="font-weight: 600;">${label}</span>
           ${desc ? `<span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${desc}</span>` : ''}
@@ -1651,35 +1384,14 @@
       };
 
       if (cat === 'mouse') {
-        content.appendChild(makeBtn('Left Click', 'Mouse 1', () => applyRemap(BTN_TYPE_MOUSE, 0x01, 0)));
-        content.appendChild(makeBtn('Right Click', 'Mouse 2', () => applyRemap(BTN_TYPE_MOUSE, 0x02, 0)));
-        content.appendChild(makeBtn('Wheel / Middle Click', 'Mouse 3', () => applyRemap(BTN_TYPE_MOUSE, 0x03, 0)));
-        content.appendChild(makeBtn('Backward / Back', 'Mouse 4 (Side Back)', () => applyRemap(BTN_TYPE_MOUSE, 0x05, 0)));
-        content.appendChild(makeBtn('Forward', 'Mouse 5 (Side Front)', () => applyRemap(BTN_TYPE_MOUSE, 0x04, 0)));
-        content.appendChild(makeBtn('Double Click', 'xclick', () => applyRemap(BTN_TYPE_XCLICK, 0x01, 0)));
+        content.appendChild(makeBtn('Left Click', 'Mouse 1 (Primary)', () => applyRemap(BTN_TYPE_MOUSE, 0x01, 0)));
+        content.appendChild(makeBtn('Right Click', 'Mouse 2 (Secondary)', () => applyRemap(BTN_TYPE_MOUSE, 0x02, 0)));
+        content.appendChild(makeBtn('Wheel / Middle Click', 'Mouse 3 (Scroll Click)', () => applyRemap(BTN_TYPE_MOUSE, 0x03, 0)));
+        content.appendChild(makeBtn('Backward / Back', 'Mouse 4 (Side Back)', () => applyRemap(BTN_TYPE_MOUSE, 0x04, 0)));
+        content.appendChild(makeBtn('Forward', 'Mouse 5 (Side Front)', () => applyRemap(BTN_TYPE_MOUSE, 0x05, 0)));
+        content.appendChild(makeBtn('Double Click', 'xclick (Rapid Fire)', () => applyRemap(BTN_TYPE_XCLICK, 0x01, 0)));
       } else if (cat === 'keyboard') {
-        const shortcuts = [
-          ['Ctrl+C (Copy)', 'Clipboard', 0x01, HID_KEYS.c],
-          ['Ctrl+V (Paste)', 'Clipboard', 0x01, HID_KEYS.v],
-          ['Ctrl+X (Cut)', 'Clipboard', 0x01, HID_KEYS.x],
-          ['Ctrl+Z (Undo)', 'Edit', 0x01, HID_KEYS.z],
-          ['Ctrl+A (Select All)', 'Edit', 0x01, HID_KEYS.a],
-          ['Ctrl+S (Save)', 'File', 0x01, HID_KEYS.s],
-          ['Alt+Tab', 'Window Switch', 0x04, HID_KEYS.tab],
-          ['Enter', 'Key', 0, HID_KEYS.enter],
-          ['Escape', 'Key', 0, HID_KEYS.esc],
-          ['Space', 'Key', 0, HID_KEYS.space],
-          ['Backspace', 'Key', 0, HID_KEYS.backspace],
-          ['Delete', 'Key', 0, HID_KEYS.delete],
-          ['Tab', 'Key', 0, HID_KEYS.tab],
-        ];
-        shortcuts.forEach(([label, desc, mod, key]) => {
-          content.appendChild(makeBtn(label, desc, () => applyRemap(BTN_TYPE_KEYBOARD, mod, key)));
-        });
-        // Function keys
-        for (let i = 1; i <= 12; i++) {
-          content.appendChild(makeBtn(`F${i}`, 'Function Key', () => applyRemap(BTN_TYPE_KEYBOARD, 0, HID_KEYS['f' + i])));
-        }
+        renderKeyboardRemapSection(content);
       } else if (cat === 'dpi') {
         content.appendChild(makeBtn('DPI Loop (Cycle All Stages)', '0x03', () => applyRemap(BTN_TYPE_DPI, 0x03, 0)));
         content.appendChild(makeBtn('DPI Up (+)', '0x01', () => applyRemap(BTN_TYPE_DPI, 0x01, 0)));
@@ -1692,21 +1404,293 @@
         content.appendChild(makeBtn('Scroll Up', 'Wheel Up', () => applyRemap(BTN_TYPE_SCROLL, 0x01, 0)));
         content.appendChild(makeBtn('Scroll Down', 'Wheel Down', () => applyRemap(BTN_TYPE_SCROLL, 0xff, 0)));
       } else if (cat === 'profile') {
-        content.appendChild(makeBtn('Profile Next (+)', 'Switch profile', () => applyRemap(BTN_TYPE_PROFILE, 0x03, 0)));
-        content.appendChild(makeBtn('Profile Previous (−)', 'Switch profile', () => applyRemap(BTN_TYPE_PROFILE, 0x04, 0)));
-      } else if (cat === 'macro') {
-        if (appState.macros.length === 0) {
-          content.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px;">No macros created yet. Open the <strong>Macro Manager</strong> tab to record or create one!</div>';
-        } else {
-          appState.macros.forEach((m) => {
-            const hw = resolveMacroHardwareAction(m);
-            content.appendChild(makeBtn(`Macro: ${m.name}`, `Hardware: ${hw.label}`, () => {
-              applyRemapMacro(m.id || m.name);
-            }));
-          });
-        }
+        content.appendChild(makeBtn('Profile Next (+)', 'Switch Profile', () => applyRemap(BTN_TYPE_PROFILE, 0x03, 0)));
+        content.appendChild(makeBtn('Profile Previous (−)', 'Switch Profile', () => applyRemap(BTN_TYPE_PROFILE, 0x04, 0)));
       } else if (cat === 'special') {
         content.appendChild(makeBtn('Disabled (No Action)', '0x00', () => applyRemap(BTN_TYPE_DISABLED, 0, 0)));
+      }
+    }
+
+    function renderKeyboardRemapSection(container) {
+      container.innerHTML = `
+        <!-- Interactive Key Capturer -->
+        <div style="background: var(--input-bg); border: 2px dashed var(--primary); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; transition: all var(--transition);" id="key-capture-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div id="key-capture-label" style="font-size: 13px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                <span>⌨️ Press Any Key to Capture</span>
+              </div>
+              <div id="key-capture-hint" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+                Click "Start Listening", then press any key or combo (e.g. E, R, X, Shift+F, Ctrl+Z)
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button id="key-capture-btn" class="btn-primary" style="font-size: 11px; padding: 6px 12px;" onclick="toggleKeyCaptureListening()">
+                🎧 Start Listening
+              </button>
+              <div id="captured-badge-wrap" style="display: none; align-items: center; gap: 6px;">
+                <span id="captured-key-badge" style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: var(--card); border: 1px solid var(--primary); color: var(--text);"></span>
+                <button id="apply-captured-btn" class="btn-primary" style="font-size: 11px; padding: 6px 12px; background: var(--accent); border-color: var(--accent);">✓ Bind Key</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modifier Quick-Toggle Bar -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 12px; border-radius: 8px; background: var(--surface-hover); border: 1px solid var(--border); flex-wrap: wrap;">
+          <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Combo Modifiers:</span>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="mod-ctrl" onchange="selectedKeyboardModifiers.ctrl = this.checked;" ${selectedKeyboardModifiers.ctrl ? 'checked' : ''}> Ctrl
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="mod-shift" onchange="selectedKeyboardModifiers.shift = this.checked;" ${selectedKeyboardModifiers.shift ? 'checked' : ''}> Shift
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="mod-alt" onchange="selectedKeyboardModifiers.alt = this.checked;" ${selectedKeyboardModifiers.alt ? 'checked' : ''}> Alt
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="mod-win" onchange="selectedKeyboardModifiers.win = this.checked;" ${selectedKeyboardModifiers.win ? 'checked' : ''}> Win
+          </label>
+          <span style="font-size: 10px; color: var(--text-muted); margin-left: auto;">(Checked modifiers combine with clicked keys below)</span>
+        </div>
+
+        <!-- 1. POPULAR GAMING ACTIONS (E, R, X, etc.) -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>🎮 Popular Gaming Actions</span>
+          </div>
+          <div id="gaming-keys-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px;"></div>
+        </div>
+
+        <!-- 2. ALPHABET A-Z GRID -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+            🔤 Full Alphabet (A – Z)
+          </div>
+          <div id="alphabet-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 5px;"></div>
+        </div>
+
+        <!-- 3. NUMBERS & SYMBOLS -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+            🔢 Numbers & Symbols
+          </div>
+          <div id="numbers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 5px;"></div>
+        </div>
+
+        <!-- 4. CONTROLS & NAVIGATION -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+            🕹️ System & Navigation Keys
+          </div>
+          <div id="nav-keys-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px;"></div>
+        </div>
+
+        <!-- 5. FUNCTION KEYS F1-F12 -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+            ⚡ Function Keys (F1 – F12)
+          </div>
+          <div id="fkeys-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 5px;"></div>
+        </div>
+
+        <!-- 6. COMMON SHORTCUTS -->
+        <div style="margin-bottom: 8px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+            📋 Common Shortcuts
+          </div>
+          <div id="shortcuts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px;"></div>
+        </div>
+      `;
+
+      const createKeyTile = (label, sublabel, mod, keycode) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-secondary';
+        btn.style.cssText = 'padding: 8px 10px; font-size: 12px; text-align: center; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;';
+        btn.innerHTML = `
+          <span style="font-weight: 700;">${label}</span>
+          ${sublabel ? `<span style="font-size: 10px; color: var(--text-muted); line-height: 1.1;">${sublabel}</span>` : ''}
+        `;
+        btn.onclick = () => {
+          const finalMod = mod || getSelectedModifierMask();
+          applyRemap(BTN_TYPE_KEYBOARD, finalMod, keycode);
+        };
+        return btn;
+      };
+
+      // 1. Gaming Keys
+      const gamingGrid = container.querySelector('#gaming-keys-grid');
+      const gamingKeys = [
+        ['E', 'Interact / Pick Up', 0, HID_KEYS.e],
+        ['R', 'Reload Weapon', 0, HID_KEYS.r],
+        ['X', 'Ability / Ult', 0, HID_KEYS.x],
+        ['Q', 'Skill / Weapon', 0, HID_KEYS.q],
+        ['F', 'Flash / Use', 0, HID_KEYS.f],
+        ['C', 'Crouch / Slide', 0, HID_KEYS.c],
+        ['V', 'Melee / PTT', 0, HID_KEYS.v],
+        ['Z', 'Ping / Prone', 0, HID_KEYS.z],
+        ['G', 'Grenade / Throw', 0, HID_KEYS.g],
+        ['T', 'Chat / Spray', 0, HID_KEYS.t],
+        ['B', 'Buy Menu / Bag', 0, HID_KEYS.b],
+        ['M', 'Map', 0, HID_KEYS.m],
+        ['Space', 'Jump / Vault', 0, HID_KEYS.space],
+        ['Tab', 'Scoreboard', 0, HID_KEYS.tab],
+        ['Shift', 'Sprint (Hold)', 0x02, 0],
+        ['Ctrl', 'Crouch (Hold)', 0x01, 0],
+        ['Alt', 'Free Look', 0x04, 0],
+        ['1', 'Primary Weapon', 0, HID_KEYS['1']],
+        ['2', 'Secondary Weapon', 0, HID_KEYS['2']],
+        ['3', 'Melee / Knife', 0, HID_KEYS['3']],
+        ['4', 'Utility / Grenade', 0, HID_KEYS['4']],
+      ];
+      gamingKeys.forEach(([name, role, mod, code]) => {
+        gamingGrid.appendChild(createKeyTile(name, role, mod, code));
+      });
+
+      // 2. Alphabet A-Z
+      const alphaGrid = container.querySelector('#alphabet-grid');
+      for (let i = 0; i < 26; i++) {
+        const char = String.fromCharCode(65 + i);
+        const lower = char.toLowerCase();
+        alphaGrid.appendChild(createKeyTile(char, '', 0, HID_KEYS[lower]));
+      }
+
+      // 3. Numbers & Symbols
+      const numGrid = container.querySelector('#numbers-grid');
+      const numKeys = ['1','2','3','4','5','6','7','8','9','0','minus','equal','lbracket','rbracket','backslash','semicolon','quote','comma','dot','slash'];
+      const numSymbols = {
+        minus: '-', equal: '=', lbracket: '[', rbracket: ']', backslash: '\\',
+        semicolon: ';', quote: "'", comma: ',', dot: '.', slash: '/'
+      };
+      numKeys.forEach(k => {
+        const display = numSymbols[k] || k;
+        numGrid.appendChild(createKeyTile(display, '', 0, HID_KEYS[k]));
+      });
+
+      // 4. Controls & Navigation
+      const navGrid = container.querySelector('#nav-keys-grid');
+      const navKeys = [
+        ['Enter', HID_KEYS.enter],
+        ['Escape', HID_KEYS.esc],
+        ['Space', HID_KEYS.space],
+        ['Tab', HID_KEYS.tab],
+        ['Backspace', HID_KEYS.backspace],
+        ['Delete', HID_KEYS.delete],
+        ['Insert', HID_KEYS.insert],
+        ['Caps Lock', HID_KEYS.capslock],
+        ['Home', HID_KEYS.home],
+        ['End', HID_KEYS.end],
+        ['Page Up', HID_KEYS.pageup],
+        ['Page Down', HID_KEYS.pagedown],
+        ['↑ Up', HID_KEYS.up],
+        ['↓ Down', HID_KEYS.down],
+        ['← Left', HID_KEYS.left],
+        ['→ Right', HID_KEYS.right],
+      ];
+      navKeys.forEach(([name, code]) => {
+        navGrid.appendChild(createKeyTile(name, '', 0, code));
+      });
+
+      // 5. Function Keys F1-F12
+      const fGrid = container.querySelector('#fkeys-grid');
+      for (let i = 1; i <= 12; i++) {
+        fGrid.appendChild(createKeyTile(`F${i}`, '', 0, HID_KEYS['f' + i]));
+      }
+
+      // 6. Common Shortcuts
+      const shortGrid = container.querySelector('#shortcuts-grid');
+      const shortcuts = [
+        ['Ctrl+C', 'Copy', 0x01, HID_KEYS.c],
+        ['Ctrl+V', 'Paste', 0x01, HID_KEYS.v],
+        ['Ctrl+X', 'Cut', 0x01, HID_KEYS.x],
+        ['Ctrl+Z', 'Undo', 0x01, HID_KEYS.z],
+        ['Ctrl+Y', 'Redo', 0x01, HID_KEYS.y],
+        ['Ctrl+A', 'Select All', 0x01, HID_KEYS.a],
+        ['Ctrl+S', 'Save', 0x01, HID_KEYS.s],
+        ['Ctrl+W', 'Close Tab', 0x01, HID_KEYS.w],
+        ['Ctrl+T', 'New Tab', 0x01, HID_KEYS.t],
+        ['Alt+Tab', 'Switch App', 0x04, HID_KEYS.tab],
+        ['Win+D', 'Desktop', 0x08, HID_KEYS.d],
+        ['Alt+F4', 'Close App', 0x04, HID_KEYS.f4],
+      ];
+      shortcuts.forEach(([name, desc, mod, code]) => {
+        shortGrid.appendChild(createKeyTile(name, desc, mod, code));
+      });
+    }
+
+    let capturedKeyData = null;
+    let isCapturingKey = false;
+
+    function toggleKeyCaptureListening() {
+      const box = document.getElementById('key-capture-box');
+      const btn = document.getElementById('key-capture-btn');
+      const label = document.getElementById('key-capture-label');
+      const hint = document.getElementById('key-capture-hint');
+      const badgeWrap = document.getElementById('captured-badge-wrap');
+
+      if (isCapturingKey) {
+        stopKeyCaptureListening();
+        return;
+      }
+
+      isCapturingKey = true;
+      box.style.borderColor = 'var(--accent)';
+      box.style.background = 'rgba(16, 185, 129, 0.05)';
+      btn.textContent = '⏹ Stop Listening';
+      btn.className = 'btn-danger';
+      label.innerHTML = '<span>🎧 Listening for Keystroke...</span>';
+      hint.textContent = 'Press any key or shortcut combination now (e.g. E, R, X, Ctrl+E, Alt+F4)';
+      badgeWrap.style.display = 'none';
+
+      activeKeyCapturerListener = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+          stopKeyCaptureListening();
+          return;
+        }
+
+        const parsed = parseDOMKeyEvent(e);
+        if (parsed.isOnlyModifier && !parsed.keycode) {
+          label.innerHTML = `<span>Modifier: ${parsed.label}... (press key to finish)</span>`;
+          return;
+        }
+
+        capturedKeyData = parsed;
+        const badge = document.getElementById('captured-key-badge');
+        badge.textContent = parsed.label;
+        badgeWrap.style.display = 'flex';
+
+        const applyBtn = document.getElementById('apply-captured-btn');
+        applyBtn.onclick = () => {
+          applyRemap(BTN_TYPE_KEYBOARD, parsed.mod, parsed.keycode);
+        };
+
+        label.innerHTML = `<span>✓ Captured: <strong>${parsed.label}</strong></span>`;
+        hint.textContent = 'Click "Bind Key" to confirm, or press another key to re-capture.';
+      };
+
+      window.addEventListener('keydown', activeKeyCapturerListener, true);
+    }
+
+    function stopKeyCaptureListening() {
+      isCapturingKey = false;
+      if (activeKeyCapturerListener) {
+        window.removeEventListener('keydown', activeKeyCapturerListener, true);
+        activeKeyCapturerListener = null;
+      }
+      const box = document.getElementById('key-capture-box');
+      const btn = document.getElementById('key-capture-btn');
+      const label = document.getElementById('key-capture-label');
+      const hint = document.getElementById('key-capture-hint');
+      if (box && btn && label && hint) {
+        box.style.borderColor = 'var(--primary)';
+        box.style.background = 'var(--input-bg)';
+        btn.textContent = '🎧 Start Listening';
+        btn.className = 'btn-primary';
+        label.innerHTML = '<span>⌨️ Press Any Key to Capture</span>';
+        hint.textContent = 'Click "Start Listening", then press any key or combo (e.g. E, R, X, Shift+F, Ctrl+Z)';
       }
     }
 
@@ -1715,495 +1699,23 @@
       const pIdx = appState.current_tab_profile - 1;
       const btnName = appState.remapTarget.buttonName;
       appState.profiles[pIdx].buttons[btnName] = [type, a1, a2];
-      removeButtonMacroBinding(appState.current_tab_profile, btnName);
 
       await transmitButtonBinding(appState.current_tab_profile, btnName, [type, a1, a2]);
 
       closeRemapModal();
       renderButtonAssignment();
       renderInfoTab();
-    }
-
-    async function applyRemapMacro(macroId) {
-      if (!appState.remapTarget) return;
-      const pIdx = appState.current_tab_profile - 1;
-      const btnName = appState.remapTarget.buttonName;
-      const macro = appState.macros.find(m => m.id === macroId || m.name === macroId);
-      if (!macro) return;
-
-      // Save macro marker in app state and localStorage
-      appState.profiles[pIdx].buttons[btnName] = [BTN_TYPE_MACRO, macro.id, 0];
-      saveButtonMacroBinding(appState.current_tab_profile, btnName, macro.id);
-
-      // Resolve the actual hardware command to program into the mouse
-      const hw = resolveMacroHardwareAction(macro);
-
-      // Program the hardware button immediately
-      await transmitButtonBinding(appState.current_tab_profile, btnName, [hw.type, hw.a1, hw.a2]);
-
-      closeRemapModal();
-      renderButtonAssignment();
-      renderInfoTab();
-      showToast(`✓ Macro "${macro.name}" programmed to ${BUTTON_LABELS[btnName]} (Action: ${hw.label})`);
+      showToast(`✓ Assigned ${describeButton(type, a1, a2)} to ${BUTTON_LABELS[btnName] || btnName}`);
     }
 
     async function transmitButtonBinding(profileNum, btnKey, binding) {
       const btnId = BUTTON_MAP[btnKey];
       if (btnId === undefined) return;
-
-      let type = binding[0], a1 = binding[1], a2 = binding[2];
-      if (type === BTN_TYPE_MACRO) {
-        const macro = appState.macros.find(m => m.id === a1 || m.name === a1);
-        const hw = resolveMacroHardwareAction(macro);
-        type = hw.type; a1 = hw.a1; a2 = hw.a2;
-      }
-
+      const type = binding[0], a1 = binding[1], a2 = binding[2];
       await executeSingleChange({
         profile: profileNum,
         button: { id: btnId, type: type, a1: a1, a2: a2 }
       });
-    }
-
-    // ── Robust Macro Recording & Management System ──────────────────────
-    function createNewMacro() {
-      const newId = 'macro_' + Date.now();
-      const macro = {
-        id: newId,
-        name: 'Macro ' + (appState.macros.length + 1),
-        mode: 'once',
-        hwType: 'auto',
-        steps: []
-      };
-      appState.macros.push(macro);
-      appState.activeMacroIdx = appState.macros.length - 1;
-      saveMacrosToStorage();
-      renderMacroList();
-      renderMacroEditor();
-      showToast(`Created ${macro.name}`);
-    }
-
-    function selectMacro(idx) {
-      if (appState.isRecording) toggleMacroRecording();
-      appState.activeMacroIdx = idx;
-      renderMacroList();
-      renderMacroEditor();
-    }
-
-    function deleteMacro(idx) {
-      if (appState.isRecording) toggleMacroRecording();
-      const name = appState.macros[idx]?.name || 'Macro';
-      appState.macros.splice(idx, 1);
-      if (appState.activeMacroIdx >= appState.macros.length) appState.activeMacroIdx = appState.macros.length - 1;
-      saveMacrosToStorage();
-      renderMacroList();
-      renderMacroEditor();
-      showToast(`Deleted ${name}`);
-    }
-
-    function duplicateActiveMacro() {
-      if (appState.activeMacroIdx < 0) return;
-      const src = appState.macros[appState.activeMacroIdx];
-      const dup = {
-        id: 'macro_' + Date.now(),
-        name: src.name + ' (Copy)',
-        mode: src.mode,
-        hwType: src.hwType || 'auto',
-        steps: JSON.parse(JSON.stringify(src.steps))
-      };
-      appState.macros.push(dup);
-      appState.activeMacroIdx = appState.macros.length - 1;
-      saveMacrosToStorage();
-      renderMacroList();
-      renderMacroEditor();
-      showToast(`Duplicated ${src.name}`);
-    }
-
-    function renderMacroList() {
-      const list = document.getElementById('macro-list');
-      list.innerHTML = '';
-      if (appState.macros.length === 0) {
-        list.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px;">No macros created. Click <strong>New Macro</strong> to start!</div>';
-        return;
-      }
-      appState.macros.forEach((m, i) => {
-        const item = document.createElement('div');
-        const isActive = i === appState.activeMacroIdx;
-        const hw = resolveMacroHardwareAction(m);
-        item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; background: ${isActive ? 'var(--primary-glow)' : 'var(--input-bg)'}; border: 1px solid ${isActive ? 'var(--primary)' : 'var(--border)'}; cursor: pointer; transition: all var(--transition);`;
-        item.innerHTML = `
-          <div onclick="selectMacro(${i})" style="flex: 1; min-width: 0;">
-            <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.name}</div>
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${m.steps.length} steps • ${hw.label}</div>
-          </div>
-          <button onclick="event.stopPropagation(); deleteMacro(${i})" style="padding: 4px; border: none; background: none; color: var(--text-muted); cursor: pointer;" title="Delete">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
-        `;
-        list.appendChild(item);
-      });
-    }
-
-    function renderMacroEditor() {
-      const empty = document.getElementById('macro-editor-empty');
-      const active = document.getElementById('macro-editor-active');
-      if (appState.activeMacroIdx < 0 || appState.activeMacroIdx >= appState.macros.length) {
-        empty.style.display = ''; active.style.display = 'none'; return;
-      }
-      empty.style.display = 'none'; active.style.display = '';
-
-      const macro = appState.macros[appState.activeMacroIdx];
-      document.getElementById('macro-name-input').value = macro.name;
-      document.getElementById('macro-step-count').textContent = `(${macro.steps.length} steps)`;
-
-      // Total duration estimate
-      let totalMs = 0;
-      macro.steps.forEach(s => { if (s.type === 'delay') totalMs += s.ms; });
-      document.getElementById('macro-duration-estimate').textContent = `Est. Duration: ~${totalMs} ms`;
-
-      // Hardware output badge and select
-      const hw = resolveMacroHardwareAction(macro);
-      document.getElementById('macro-hw-badge').textContent = `Action: ${hw.label}`;
-      document.getElementById('macro-hw-override-select').value = macro.hwType || 'auto';
-
-      // Mode buttons
-      document.querySelectorAll('.macro-mode-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === macro.mode);
-      });
-      const descEl = document.getElementById('macro-mode-desc');
-      if (macro.mode === 'once') descEl.textContent = 'Execute once per button press';
-      else if (macro.mode === 'hold') descEl.textContent = 'Repeat continuously while button is held down';
-      else if (macro.mode === 'toggle') descEl.textContent = 'Press once to loop continuously, press again to stop';
-
-      // Render steps list
-      const stepsList = document.getElementById('macro-steps-list');
-      stepsList.innerHTML = '';
-      if (macro.steps.length === 0) {
-        stepsList.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px;">No steps recorded yet. Click <strong>Start Live Recording</strong> or use the manual buttons above.</div>';
-      } else {
-        macro.steps.forEach((step, i) => {
-          const row = document.createElement('div');
-          row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); margin-bottom: 4px; font-size: 12px; gap: 8px;';
-
-          let icon = '⌨️';
-          let label = '';
-          if (step.type === 'delay') {
-            icon = '⏱️';
-            label = `<div style="display: flex; align-items: center; gap: 6px;">
-              <span>Delay</span>
-              <input type="number" min="1" max="10000" value="${step.ms}" onchange="updateStepDelay(${i}, this.value)" style="width: 50px; padding: 2px 4px; border-radius: 4px; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); font-size: 11px; text-align: right;">
-              <span style="color: var(--text-muted);">ms</span>
-            </div>`;
-          } else if (step.type === 'keydown') {
-            icon = '⬇️';
-            label = `<span style="color: var(--primary); font-weight: 600;">Key Down:</span> <strong style="font-family: monospace;">${escapeHtml(step.key)}</strong>`;
-          } else if (step.type === 'keyup') {
-            icon = '⬆️';
-            label = `<span style="color: var(--text-secondary);">Key Up:</span> <strong style="font-family: monospace;">${escapeHtml(step.key)}</strong>`;
-          } else if (step.type === 'mousedown') {
-            icon = '🖱️';
-            label = `<span style="color: var(--accent); font-weight: 600;">Mouse Down:</span> <strong>${step.button}</strong>`;
-          } else if (step.type === 'mouseup') {
-            icon = '🖱️';
-            label = `<span style="color: var(--text-secondary);">Mouse Up:</span> <strong>${step.button}</strong>`;
-          }
-
-          row.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-              <span style="font-size: 11px; font-family: monospace; color: var(--text-muted); width: 22px;">${i + 1}.</span>
-              <span style="font-size: 13px;">${icon}</span>
-              <div style="flex: 1;">${label}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 2px;">
-              ${i > 0 ? `<button onclick="moveMacroStep(${i}, -1)" style="padding: 2px 6px; border: none; background: none; color: var(--text-muted); cursor: pointer;" title="Move Up">↑</button>` : ''}
-              ${i < macro.steps.length - 1 ? `<button onclick="moveMacroStep(${i}, 1)" style="padding: 2px 6px; border: none; background: none; color: var(--text-muted); cursor: pointer;" title="Move Down">↓</button>` : ''}
-              <button onclick="removeMacroStep(${i})" style="padding: 2px 6px; border: none; background: none; color: var(--text-muted); cursor: pointer;" title="Delete Step">✕</button>
-            </div>
-          `;
-          stepsList.appendChild(row);
-        });
-      }
-    }
-
-    function updateMacroName(val) {
-      if (appState.activeMacroIdx < 0) return;
-      appState.macros[appState.activeMacroIdx].name = val.trim() || 'Untitled Macro';
-      saveMacrosToStorage();
-      renderMacroList();
-    }
-
-    function setMacroMode(mode) {
-      if (appState.activeMacroIdx < 0) return;
-      appState.macros[appState.activeMacroIdx].mode = mode;
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function updateMacroHardwareOverride(val) {
-      if (appState.activeMacroIdx < 0) return;
-      appState.macros[appState.activeMacroIdx].hwType = val;
-      saveMacrosToStorage();
-      renderMacroEditor();
-      renderMacroList();
-      showToast(`Hardware trigger updated: ${val}`);
-    }
-
-    async function applyHardwareBindingNow() {
-      if (appState.activeMacroIdx < 0) return;
-      const macro = appState.macros[appState.activeMacroIdx];
-      const hw = resolveMacroHardwareAction(macro);
-
-      // Check which buttons have this macro assigned
-      const pIdx = appState.current_tab_profile - 1;
-      const prof = appState.profiles[pIdx];
-      let assignedCount = 0;
-
-      for (const [btnKey, val] of Object.entries(prof.buttons)) {
-        if (Array.isArray(val) && val[0] === BTN_TYPE_MACRO && val[1] === macro.id) {
-          await transmitButtonBinding(appState.current_tab_profile, btnKey, [hw.type, hw.a1, hw.a2]);
-          assignedCount++;
-        }
-      }
-
-      if (assignedCount > 0) {
-        showToast(`✓ Programmed ${macro.name} (${hw.label}) to ${assignedCount} assigned button(s)`);
-      } else {
-        showToast(`Hardware trigger is ${hw.label}. Choose a button in 'Assign to Button' above.`);
-      }
-    }
-
-    function quickAssignMacro(buttonKey) {
-      if (!buttonKey || appState.activeMacroIdx < 0) return;
-      const macro = appState.macros[appState.activeMacroIdx];
-      appState.remapTarget = { buttonName: buttonKey };
-      applyRemapMacro(macro.id || macro.name);
-      document.getElementById('macro-assign-btn-select').value = '';
-    }
-
-    async function testPlaybackMacro() {
-      if (appState.activeMacroIdx < 0) return;
-      const macro = appState.macros[appState.activeMacroIdx];
-      if (!macro.steps.length) {
-        showToast("Macro is empty. Record some steps first!", true);
-        return;
-      }
-      showToast(`▶ Testing macro: ${macro.name}...`);
-      const stepsList = document.getElementById('macro-steps-list');
-      const rows = stepsList.children;
-
-      for (let i = 0; i < macro.steps.length; i++) {
-        const step = macro.steps[i];
-        if (rows[i]) rows[i].style.background = 'var(--primary-glow)';
-
-        if (step.type === 'delay') {
-          await new Promise(r => setTimeout(r, Math.min(step.ms, 200)));
-        } else {
-          await new Promise(r => setTimeout(r, 40));
-        }
-
-        if (rows[i]) rows[i].style.background = 'var(--card)';
-      }
-      showToast(`✓ Playback of ${macro.name} complete!`);
-    }
-
-    // ── Live Event Recording Engine ─────────────────────────────────────
-    let globalKeydownHandler = null;
-    let globalKeyupHandler = null;
-
-    function toggleMacroRecording() {
-      const btn = document.getElementById('record-btn');
-      const banner = document.getElementById('recording-active-banner');
-
-      if (appState.isRecording) {
-        appState.isRecording = false;
-        if (globalKeydownHandler) {
-          window.removeEventListener('keydown', globalKeydownHandler, true);
-          globalKeydownHandler = null;
-        }
-        if (globalKeyupHandler) {
-          window.removeEventListener('keyup', globalKeyupHandler, true);
-          globalKeyupHandler = null;
-        }
-
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg> <span>Start Live Recording</span>`;
-        btn.className = 'btn-primary';
-        banner.style.display = 'none';
-
-        saveMacrosToStorage();
-        renderMacroEditor();
-        renderMacroList();
-        showToast('Recording stopped and saved.');
-      } else {
-        if (appState.activeMacroIdx < 0) {
-          showToast('Create or select a macro first', true);
-          return;
-        }
-        if (btn) btn.blur();
-
-        appState.isRecording = true;
-        appState.recordingStartTime = Date.now();
-        appState.recordingLastTime = Date.now();
-        const macro = appState.macros[appState.activeMacroIdx];
-
-        globalKeydownHandler = (e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleMacroRecording();
-            return;
-          }
-          if (e.repeat) return;
-
-          e.preventDefault();
-          e.stopPropagation();
-
-          const now = Date.now();
-          const elapsed = now - appState.recordingLastTime;
-          if (elapsed > 10 && macro.steps.length > 0) {
-            macro.steps.push({ type: 'delay', ms: elapsed });
-          }
-          macro.steps.push({ type: 'keydown', key: e.key, code: e.code });
-          appState.recordingLastTime = now;
-          renderMacroEditor();
-
-          const list = document.getElementById('macro-steps-list');
-          if (list) list.scrollTop = list.scrollHeight;
-        };
-
-        globalKeyupHandler = (e) => {
-          if (e.key === 'Escape') return;
-
-          e.preventDefault();
-          e.stopPropagation();
-
-          const now = Date.now();
-          const elapsed = now - appState.recordingLastTime;
-          if (elapsed > 10) {
-            macro.steps.push({ type: 'delay', ms: elapsed });
-          }
-          macro.steps.push({ type: 'keyup', key: e.key, code: e.code });
-          appState.recordingLastTime = now;
-          renderMacroEditor();
-
-          const list = document.getElementById('macro-steps-list');
-          if (list) list.scrollTop = list.scrollHeight;
-        };
-
-        window.addEventListener('keydown', globalKeydownHandler, true);
-        window.addEventListener('keyup', globalKeyupHandler, true);
-
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg> <span>Stop Recording</span>`;
-        btn.className = 'btn-danger';
-        banner.style.display = 'block';
-
-        showToast('🔴 Recording live... Press keys or click mouse box!');
-      }
-    }
-
-    // Interactive mouse clicks recorder
-    function handleMouseCapture(e) {
-      if (appState.activeMacroIdx < 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const buttonMap = {
-        0: { name: 'Left Click', num: 1 },
-        1: { name: 'Middle Click', num: 3 },
-        2: { name: 'Right Click', num: 2 },
-        3: { name: 'Side Button 4 (Back)', num: 4 },
-        4: { name: 'Side Button 5 (Front)', num: 5 }
-      };
-
-      const btnInfo = buttonMap[e.button] || { name: `Button ${e.button + 1}`, num: e.button + 1 };
-      const macro = appState.macros[appState.activeMacroIdx];
-      const now = Date.now();
-      const elapsed = appState.isRecording ? (now - appState.recordingLastTime) : 40;
-
-      if (elapsed > 10 && macro.steps.length > 0) {
-        macro.steps.push({ type: 'delay', ms: Math.min(elapsed, 250) });
-      }
-      macro.steps.push({ type: 'mousedown', button: btnInfo.name, buttonNum: btnInfo.num });
-      macro.steps.push({ type: 'delay', ms: 30 });
-      macro.steps.push({ type: 'mouseup', button: btnInfo.name, buttonNum: btnInfo.num });
-
-      appState.recordingLastTime = now;
-      saveMacrosToStorage();
-      renderMacroEditor();
-
-      const list = document.getElementById('macro-steps-list');
-      if (list) list.scrollTop = list.scrollHeight;
-    }
-
-    // Manual Step Handlers
-    function promptAddKey() {
-      if (appState.activeMacroIdx < 0) { showToast('Select a macro first', true); return; }
-      const key = prompt("Enter key name to press (e.g., 'a', 'F5', 'Shift', 'Space', 'Enter'):", "a");
-      if (!key) return;
-      const macro = appState.macros[appState.activeMacroIdx];
-      macro.steps.push({ type: 'keydown', key: key, code: 'CustomKey' });
-      macro.steps.push({ type: 'delay', ms: 30 });
-      macro.steps.push({ type: 'keyup', key: key, code: 'CustomKey' });
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function addManualMouseClick() {
-      if (appState.activeMacroIdx < 0) return;
-      const select = document.getElementById('quick-mouse-step-select');
-      const val = select.value;
-      const names = {
-        left: 'Left Click', right: 'Right Click', middle: 'Middle Click',
-        thumb1: 'Side Button 4 (Back)', thumb2: 'Side Button 5 (Front)'
-      };
-      const macro = appState.macros[appState.activeMacroIdx];
-      if (macro.steps.length > 0) macro.steps.push({ type: 'delay', ms: 40 });
-      macro.steps.push({ type: 'mousedown', button: names[val] || val, buttonNum: 1 });
-      macro.steps.push({ type: 'delay', ms: 30 });
-      macro.steps.push({ type: 'mouseup', button: names[val] || val, buttonNum: 1 });
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function addMacroDelay() {
-      if (appState.activeMacroIdx < 0) return;
-      const ms = parseInt(document.getElementById('delay-input').value) || 50;
-      appState.macros[appState.activeMacroIdx].steps.push({ type: 'delay', ms });
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function updateStepDelay(idx, val) {
-      if (appState.activeMacroIdx < 0) return;
-      const ms = Math.max(1, parseInt(val) || 50);
-      appState.macros[appState.activeMacroIdx].steps[idx].ms = ms;
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function removeMacroStep(idx) {
-      if (appState.activeMacroIdx < 0) return;
-      appState.macros[appState.activeMacroIdx].steps.splice(idx, 1);
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function moveMacroStep(idx, dir) {
-      if (appState.activeMacroIdx < 0) return;
-      const steps = appState.macros[appState.activeMacroIdx].steps;
-      const target = idx + dir;
-      if (target < 0 || target >= steps.length) return;
-      const temp = steps[idx];
-      steps[idx] = steps[target];
-      steps[target] = temp;
-      saveMacrosToStorage();
-      renderMacroEditor();
-    }
-
-    function clearMacroSteps() {
-      if (appState.activeMacroIdx < 0) return;
-      appState.macros[appState.activeMacroIdx].steps = [];
-      saveMacrosToStorage();
-      renderMacroEditor();
-      showToast('Steps cleared.');
     }
 
     function escapeHtml(str) {
@@ -2701,21 +2213,11 @@
           appState.profiles[p-1].brightness = b[8];
         } catch (_) {}
 
-        // Read button assignments from hardware & preserve assigned macros
-        const savedMacroBindings = JSON.parse(localStorage.getItem('openpulsar_btn_macros') || '{}');
+        // Read button assignments from hardware
         for (const [name, btnId] of Object.entries(BUTTON_MAP)) {
           try {
             const r = await eng.read(0x04, 0x01, 0x06, p, [btnId, 0xff]);
             const hwType = r[8], hwA1 = r[9], hwA2 = r[10];
-            const assignedMacroId = savedMacroBindings[`p${p}_${name}`];
-            const macro = assignedMacroId ? appState.macros.find(m => m.id === assignedMacroId) : null;
-            if (macro) {
-              const expectedHw = resolveMacroHardwareAction(macro);
-              if (expectedHw.type === hwType && expectedHw.a1 === hwA1 && expectedHw.a2 === hwA2) {
-                appState.profiles[p-1].buttons[name] = [BTN_TYPE_MACRO, macro.id, 0];
-                continue;
-              }
-            }
             appState.profiles[p-1].buttons[name] = [hwType, hwA1, hwA2];
           } catch (_) {}
         }
@@ -2810,7 +2312,6 @@
     });
 
     // ── Startup Initialization ──────────────────────────────────────────
-    loadSavedMacros();
     renderAll();
 
     // Auto-connect on page load
